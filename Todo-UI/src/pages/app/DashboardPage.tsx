@@ -1,5 +1,4 @@
 import AnalyticsPanel from '../../components/AnalyticsPanel';
-import PushNotificationManager from '../../components/PushNotificationManager';
 import TaskBoard from '../../components/TaskBoard';
 import type { TaskBoardControllerProps } from '../../routes/routeTypes';
 import { useNavigate } from 'react-router-dom';
@@ -22,7 +21,6 @@ export default function DashboardPage({
         {...taskBoardProps}
         onCreateTask={() => navigate('/app/tasks/new')}
       />
-      <PushNotificationManager />
     </>
   );
 }

@@ -9,15 +9,27 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
+      includeAssets: [
+        'favicon.svg',
+        'icons.svg',
+        'pwa-icon.svg',
+        'pwa-maskable-icon.svg',
+        'pwa-192x192.png',
+        'pwa-512x512.png',
+        'pwa-maskable-512x512.png',
+      ],
+      injectRegister: 'auto',
       manifest: {
-        name: 'React Starter Template',
-        short_name: 'Starter',
-        description: 'Vite React TypeScript starter template',
-        theme_color: '#ffffff',
-        background_color: '#ffffff',
+        name: 'TaskFlow Todo UI',
+        short_name: 'TaskFlow',
+        description:
+          'TaskFlow is an installable task dashboard with offline queueing and sync support.',
+        theme_color: '#11141B',
+        background_color: '#0F172A',
         display: 'standalone',
         start_url: '/',
-        // Place these icon files inside the public folder.
+        scope: '/',
+        orientation: 'portrait',
         icons: [
           {
             src: '/pwa-192x192.png',
@@ -30,10 +42,41 @@ export default defineConfig({
             type: 'image/png',
           },
           {
-            src: '/pwa-512x512.png',
+            src: '/pwa-maskable-512x512.png',
             sizes: '512x512',
             type: 'image/png',
             purpose: 'any maskable',
+          },
+        ],
+      },
+      workbox: {
+        cleanupOutdatedCaches: true,
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,webmanifest}'],
+        navigateFallback: 'index.html',
+        navigateFallbackDenylist: [
+          /^\/(auth|tasks|users|sync)(\/|$)/,
+        ],
+        runtimeCaching: [
+          {
+            urlPattern: ({ request, sameOrigin }) =>
+              sameOrigin &&
+              ['style', 'script', 'worker'].includes(request.destination),
+            handler: 'StaleWhileRevalidate',
+            options: {
+              cacheName: 'app-shell-resources',
+            },
+          },
+          {
+            urlPattern: ({ request, sameOrigin }) =>
+              sameOrigin && request.destination === 'image',
+            handler: 'StaleWhileRevalidate',
+            options: {
+              cacheName: 'app-image-assets',
+              expiration: {
+                maxEntries: 32,
+                maxAgeSeconds: 60 * 60 * 24 * 30,
+              },
+            },
           },
         ],
       },

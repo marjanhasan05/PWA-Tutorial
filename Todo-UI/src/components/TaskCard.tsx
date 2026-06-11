@@ -1,15 +1,19 @@
-import type { Task } from '../utils/db';
+import type { Task } from '../features/tasks/taskTypes';
+import type { TaskSyncBadgeState } from '../features/offline/offlineTypes';
 import {
+  CheckCircle2,
   Bell,
   Calendar,
   Clock,
   Edit2,
+  WifiOff,
   RefreshCw,
   ShieldAlert,
   Trash2,
 } from './AppIcons';
 
 interface TaskCardProps {
+  syncState: TaskSyncBadgeState;
   task: Task;
   onEdit: (task: Task) => void;
   onDelete: (id: string) => void;
@@ -30,6 +34,7 @@ const statusLabels: Record<Task['status'], string> = {
 };
 
 export default function TaskCard({
+  syncState,
   task,
   onEdit,
   onDelete,
@@ -54,6 +59,34 @@ export default function TaskCard({
       return '';
     }
   };
+
+  const syncBadge = {
+    FAILED: {
+      className:
+        'border-rose-500/25 bg-rose-500/10 text-rose-400',
+      icon: RefreshCw,
+      label: 'Failed',
+    },
+    OFFLINE: {
+      className:
+        'border-amber-500/25 bg-amber-500/10 text-amber-400',
+      icon: WifiOff,
+      label: 'Offline',
+    },
+    PENDING: {
+      className:
+        'border-indigo-500/25 bg-indigo-500/10 text-indigo-400',
+      icon: Clock,
+      label: 'Pending',
+    },
+    SYNCED: {
+      className:
+        'border-emerald-500/25 bg-emerald-500/10 text-emerald-400',
+      icon: CheckCircle2,
+      label: 'Synced',
+    },
+  }[syncState];
+  const SyncIcon = syncBadge.icon;
 
   return (
     <div
@@ -117,6 +150,14 @@ export default function TaskCard({
         </div>
 
         <div className="flex shrink-0 flex-col items-end gap-1.5">
+          <span
+            className={`flex items-center gap-0.5 rounded-full border px-2 py-0.5 text-[10px] font-bold ${syncBadge.className}`}
+          >
+            <SyncIcon
+              className={`h-3 w-3 ${syncState === 'PENDING' ? 'animate-pulse' : ''}`}
+            />
+            {syncBadge.label}
+          </span>
           {task.inConflict ? (
             <span className="flex animate-pulse items-center gap-0.5 rounded-full bg-rose-600 px-2 py-0.5 text-[10px] font-bold text-white shadow-md">
               <ShieldAlert className="h-3 w-3" />

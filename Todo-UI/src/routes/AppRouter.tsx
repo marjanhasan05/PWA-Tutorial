@@ -14,10 +14,15 @@ import ProtectedRoute from './ProtectedRoute';
 
 export default function AppRouter({
   allTasks,
+  conflictCount,
   errorMessage,
+  getTaskSyncState,
   hasActiveFilters,
   isAuthReady,
   isAuthenticated,
+  isOnline,
+  isSyncing,
+  isUsingOfflineData,
   isFetchingTasks,
   isLoadingTasks,
   isTaskModalOpen,
@@ -25,24 +30,30 @@ export default function AppRouter({
   onChangePage,
   onDeleteTask,
   onLogout,
+  onOpenConflicts,
   onOpenConflictModal,
   onOpenCreateModal,
   onOpenEditModal,
   onPriorityFilterChange,
+  onRetrySync,
   onRetryTasks,
   onSearchChange,
   onSortChange,
   onStatusFilterChange,
+  onSyncNow,
   onToggleTaskStatus,
+  pendingOperationCount,
   paginatedTasks,
   priorityFilter,
   searchQuery,
+  syncMeta,
   sortValue,
   statusFilter,
   user,
 }: AppRouterProps) {
   const boardProps = {
     errorMessage,
+    getTaskSyncState,
     hasActiveFilters,
     isFetching: isFetchingTasks,
     isLoading: isLoadingTasks,
@@ -81,7 +92,23 @@ export default function AppRouter({
             />
           }
         >
-          <Route element={<AppLayout onLogout={onLogout} user={user} />}>
+          <Route
+            element={
+              <AppLayout
+                conflictCount={conflictCount}
+                isOnline={isOnline}
+                isSyncing={isSyncing}
+                isUsingOfflineData={isUsingOfflineData}
+                onLogout={onLogout}
+                onOpenConflicts={onOpenConflicts}
+                onRetrySync={onRetrySync}
+                onSyncNow={onSyncNow}
+                pendingOperationCount={pendingOperationCount}
+                syncMeta={syncMeta}
+                user={user}
+              />
+            }
+          >
             <Route
               element={
                 <DashboardPage allTasks={allTasks} {...boardProps} />

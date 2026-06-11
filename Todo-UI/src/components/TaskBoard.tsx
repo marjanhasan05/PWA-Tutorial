@@ -5,6 +5,7 @@ import type { TaskBoardControllerProps } from '../routes/routeTypes';
 
 export default function TaskBoard({
   errorMessage,
+  getTaskSyncState,
   hasActiveFilters,
   isFetching = false,
   isLoading = false,
@@ -155,6 +156,7 @@ export default function TaskBoard({
             {tasks.map((task) => (
               <TaskCard
                 key={task.id}
+                syncState={getTaskSyncState(task)}
                 task={task}
                 onDelete={onDeleteTask}
                 onEdit={onEditTask}

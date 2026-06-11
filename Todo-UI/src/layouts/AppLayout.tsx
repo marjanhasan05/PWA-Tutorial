@@ -9,8 +9,20 @@ import {
 } from '../components/AppIcons';
 import OnlineIndicator from '../components/OnlineIndicator';
 import type { AuthUser } from '../features/auth/authTypes';
+import type { SyncMetaRecord } from '../features/offline/offlineTypes';
+import InstallPrompt from '../pwa/InstallPrompt';
+import PwaUpdatePrompt from '../pwa/PwaUpdatePrompt';
 
 interface AppLayoutProps {
+  conflictCount: number;
+  isOnline: boolean;
+  isSyncing: boolean;
+  isUsingOfflineData: boolean;
+  onOpenConflicts: () => void;
+  onRetrySync: () => void | Promise<void>;
+  pendingOperationCount: number;
+  onSyncNow: () => void | Promise<void>;
+  syncMeta: SyncMetaRecord;
   user: AuthUser | null;
   onLogout: () => void;
 }
@@ -22,7 +34,19 @@ const navItems = [
   { to: '/app/profile', label: 'Profile', icon: User },
 ];
 
-export default function AppLayout({ user, onLogout }: AppLayoutProps) {
+export default function AppLayout({
+  conflictCount,
+  isOnline,
+  isSyncing,
+  isUsingOfflineData,
+  onOpenConflicts,
+  onRetrySync,
+  pendingOperationCount,
+  onSyncNow,
+  syncMeta,
+  user,
+  onLogout,
+}: AppLayoutProps) {
   return (
     <div className="flex min-h-screen flex-col bg-slate-50 font-sans text-slate-900 dark:bg-slate-950 dark:text-slate-100">
       <header className="sticky top-0 z-40 border-b border-slate-100 bg-white shadow-sm dark:border-slate-800/80 dark:bg-[#11141B]">
@@ -65,7 +89,20 @@ export default function AppLayout({ user, onLogout }: AppLayoutProps) {
       </header>
 
       <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-5 p-4 pb-24 sm:pb-6">
-        <OnlineIndicator />
+        <PwaUpdatePrompt />
+        <InstallPrompt />
+
+        <OnlineIndicator
+          conflictCount={conflictCount}
+          isOnline={isOnline}
+          isSyncing={isSyncing}
+          isUsingOfflineData={isUsingOfflineData}
+          onOpenConflicts={onOpenConflicts}
+          onRetrySync={onRetrySync}
+          onSyncNow={onSyncNow}
+          pendingOperationCount={pendingOperationCount}
+          syncMeta={syncMeta}
+        />
 
         <nav className="hidden rounded-2xl border border-slate-100 bg-white p-2 shadow-sm dark:border-slate-800/80 dark:bg-[#11141B] sm:block">
           <div className="flex flex-wrap items-center gap-2">

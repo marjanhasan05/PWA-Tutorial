@@ -1,5 +1,3 @@
-export type AuthTab = 'login' | 'register';
-export type ConflictResolution = 'keep_local' | 'accept_server' | 'merge';
 export type {
   PriorityFilter,
   Task,
