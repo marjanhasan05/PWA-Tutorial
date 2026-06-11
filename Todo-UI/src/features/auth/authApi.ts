@@ -1,38 +1,49 @@
-import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
-import type { LoginRequest, LoginResponse, User } from './authTypes';
+import { baseApi } from '../api/baseApi';
+import type {
+  AuthResponse,
+  CurrentUserResponse,
+  LoginRequest,
+  LogoutRequest,
+  RegisterRequest,
+} from './authTypes';
 
-export const authApi = createApi({
-  reducerPath: 'authApi',
-  baseQuery: fetchBaseQuery({
-    baseUrl: import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000/api',
-    credentials: 'include',
-  }),
-  tagTypes: ['Auth'],
+export const authApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
-    login: builder.mutation<LoginResponse, LoginRequest>({
+    register: builder.mutation<AuthResponse, RegisterRequest>({
+      query: (body) => ({
+        url: '/auth/register',
+        method: 'POST',
+        body,
+      }),
+    }),
+    login: builder.mutation<AuthResponse, LoginRequest>({
       query: (body) => ({
         url: '/auth/login',
         method: 'POST',
         body,
       }),
-      invalidatesTags: ['Auth'],
     }),
-    getCurrentUser: builder.query<User, void>({
+    logout: builder.mutation<AuthResponse, LogoutRequest>({
+      query: (body) => ({
+        url: '/auth/logout',
+        method: 'POST',
+        body,
+      }),
+    }),
+    getCurrentUser: builder.query<CurrentUserResponse, void>({
       query: () => ({
-        url: '/auth/me',
+        url: '/users/me',
         method: 'GET',
       }),
       providesTags: ['Auth'],
     }),
-    logout: builder.mutation<{ message: string }, void>({
-      query: () => ({
-        url: '/auth/logout',
-        method: 'POST',
-      }),
-      invalidatesTags: ['Auth'],
-    }),
   }),
 });
 
-export const { useLoginMutation, useGetCurrentUserQuery, useLogoutMutation } =
-  authApi;
+export const {
+  useGetCurrentUserQuery,
+  useLazyGetCurrentUserQuery,
+  useLoginMutation,
+  useLogoutMutation,
+  useRegisterMutation,
+} = authApi;

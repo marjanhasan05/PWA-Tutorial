@@ -1,30 +1,35 @@
+import { zodResolver } from '@hookform/resolvers/zod';
 import React from 'react';
+import { useForm } from 'react-hook-form';
+import type { LoginRequest } from '../features/auth/authTypes';
+import { loginSchema } from '../features/auth/authTypes';
 import { Eye, EyeOff, Lock, LogIn, Mail } from './AppIcons';
 
 interface LoginViewProps {
+  errorMessage?: string | null;
+  isLoading?: boolean;
   onGoToRegister: () => void;
-  onLogin: (email: string) => void;
+  onLogin: (values: LoginRequest) => Promise<void> | void;
 }
 
-export default function LoginView({ onGoToRegister, onLogin }: LoginViewProps) {
-  const [email, setEmail] = React.useState('');
-  const [password, setPassword] = React.useState('');
+export default function LoginView({
+  errorMessage,
+  isLoading = false,
+  onGoToRegister,
+  onLogin,
+}: LoginViewProps) {
   const [showPassword, setShowPassword] = React.useState(false);
-  const [isAuthLoading, setIsAuthLoading] = React.useState(false);
-
-  const handleSubmit = (event: React.FormEvent) => {
-    event.preventDefault();
-    if (!email || !password) {
-      return;
-    }
-
-    setIsAuthLoading(true);
-
-    window.setTimeout(() => {
-      setIsAuthLoading(false);
-      onLogin(email);
-    }, 450);
-  };
+  const {
+    formState: { errors },
+    handleSubmit,
+    register,
+  } = useForm<LoginRequest>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: '',
+      password: '',
+    },
+  });
 
   return (
     <div className="flex w-full max-w-sm flex-col gap-6 rounded-2xl border border-slate-800/80 bg-[#11141B] p-6 font-sans shadow-2xl sm:p-8">
@@ -39,7 +44,13 @@ export default function LoginView({ onGoToRegister, onLogin }: LoginViewProps) {
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+      <form onSubmit={handleSubmit(onLogin)} className="flex flex-col gap-4">
+        {errorMessage ? (
+          <p className="rounded-xl border border-rose-900/50 bg-rose-950/20 px-3 py-2 text-xs font-semibold text-rose-300">
+            {errorMessage}
+          </p>
+        ) : null}
+
         <div className="flex flex-col gap-1">
           <label className="mb-1 text-[10px] font-bold leading-none tracking-widest text-slate-400 uppercase">
             Email Address
@@ -50,12 +61,16 @@ export default function LoginView({ onGoToRegister, onLogin }: LoginViewProps) {
               id="login-email"
               type="email"
               placeholder="e.g. marjan@example.com"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              className="w-full rounded-xl border border-slate-800 bg-[#0D1016] py-2.5 pr-4 pl-9 text-sm text-slate-200 transition-all focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/25"
-              required
+              className="w-full rounded-xl border border-slate-800 bg-[#0D1016] py-2.5 pr-4 pl-9 text-sm text-slate-200 transition-all focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/25 disabled:opacity-70"
+              disabled={isLoading}
+              {...register('email')}
             />
           </div>
+          {errors.email ? (
+            <p className="text-[11px] font-medium text-rose-400">
+              {errors.email.message}
+            </p>
+          ) : null}
         </div>
 
         <div className="flex flex-col gap-1">
@@ -68,10 +83,9 @@ export default function LoginView({ onGoToRegister, onLogin }: LoginViewProps) {
               id="login-password"
               type={showPassword ? 'text' : 'password'}
               placeholder="••••••••"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              className="w-full rounded-xl border border-slate-800 bg-[#0D1016] py-2.5 pr-10 pl-9 text-sm text-slate-200 transition-all focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/25"
-              required
+              className="w-full rounded-xl border border-slate-800 bg-[#0D1016] py-2.5 pr-10 pl-9 text-sm text-slate-200 transition-all focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/25 disabled:opacity-70"
+              disabled={isLoading}
+              {...register('password')}
             />
             <button
               type="button"
@@ -85,15 +99,20 @@ export default function LoginView({ onGoToRegister, onLogin }: LoginViewProps) {
               )}
             </button>
           </div>
+          {errors.password ? (
+            <p className="text-[11px] font-medium text-rose-400">
+              {errors.password.message}
+            </p>
+          ) : null}
         </div>
 
         <button
           id="btn-login-submit"
           type="submit"
-          disabled={isAuthLoading}
+          disabled={isLoading}
           className="glow-indigo mt-2 w-full rounded-xl bg-indigo-600 py-2.5 text-xs font-bold text-white transition-all hover:bg-indigo-500 disabled:opacity-50"
         >
-          {isAuthLoading ? 'Signing In...' : 'Sign In'}
+          {isLoading ? 'Signing In...' : 'Sign In'}
         </button>
       </form>
 
