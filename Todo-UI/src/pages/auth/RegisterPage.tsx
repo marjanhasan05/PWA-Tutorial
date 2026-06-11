@@ -3,6 +3,7 @@ import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { useAppDispatch } from '../../app/hooks';
 import RegisterView from '../../components/RegisterView';
+import { baseApi } from '../../features/api/baseApi';
 import { useRegisterMutation } from '../../features/auth/authApi';
 import { setCredentials } from '../../features/auth/authSlice';
 import type { RegisterRequest } from '../../features/auth/authTypes';
@@ -19,6 +20,7 @@ export default function RegisterPage() {
 
     try {
       const response = await registerUser(values).unwrap();
+      dispatch(baseApi.util.resetApiState());
       dispatch(setCredentials(response.data));
       toast.success(response.message || 'Account created successfully.');
       navigate('/app', { replace: true });

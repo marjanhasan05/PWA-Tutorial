@@ -5,95 +5,51 @@ import { toast } from 'sonner';
 import { useAppDispatch, useAppSelector } from './app/hooks';
 import ConflictModal from './components/ConflictModal';
 import TaskModal from './components/TaskModal';
+import { baseApi } from './features/api/baseApi';
 import {
   useLazyGetCurrentUserQuery,
   useLogoutMutation,
 } from './features/auth/authApi';
 import { clearAuth, finishSessionCheck, setUser } from './features/auth/authSlice';
+import {
+  DEFAULT_TASK_LIST_META,
+  DEFAULT_TASK_PAGE_SIZE,
+  type PriorityFilter,
+  type Task,
+  type TaskFormValues,
+  type TaskSortBy,
+  type TaskSortOrder,
+  type TaskSortValue,
+  type TaskStatus,
+  type TaskStatusFilter,
+} from './features/tasks/taskTypes';
+import {
+  useCreateTaskMutation,
+  useDeleteTaskMutation,
+  useGetTasksQuery,
+  useUpdateTaskMutation,
+} from './features/tasks/tasksApi';
 import AppRouter from './routes/AppRouter';
-import type {
-  ConflictResolution,
-  PriorityFilter,
-  Task,
-  TaskFormValues,
-  TaskStatus,
-  TaskStatusFilter,
-} from './utils/db';
-
-const INITIAL_TASKS: Task[] = [
-  {
-    id: 'task-1',
-    title: 'Finalize Mobile Design Architecture',
-    description:
-      'Ensure layout is fully responsive down to 320px with custom tactile controls and touch support.',
-    status: 'IN_PROGRESS',
-    priority: 'HIGH',
-    dueDate: new Date(Date.now() + 86400000).toISOString(),
-    reminderAt: new Date(Date.now() + 72000000).toISOString(),
-    version: 1,
-    clientCreatedAt: new Date().toISOString(),
-    clientUpdatedAt: new Date().toISOString(),
-  },
-  {
-    id: 'task-2',
-    title: 'Audit Offline Synchronization Protocol',
-    description:
-      'Verify client conflict-resolution modal loads correctly when simultaneous modifications occur.',
-    status: 'TODO',
-    priority: 'MEDIUM',
-    dueDate: new Date(Date.now() + 172800000).toISOString(),
-    reminderAt: null,
-    version: 1,
-    clientCreatedAt: new Date().toISOString(),
-    clientUpdatedAt: new Date().toISOString(),
-    inConflict: true,
-    serverTaskForConflict: {
-      id: 'task-2',
-      title: 'Audit Global Synchronization Engine (Server Version)',
-      description:
-        'Review overall client conflict-resolution pipeline with priority controls and detailed schema merges.',
-      status: 'IN_PROGRESS',
-      priority: 'HIGH',
-      dueDate: new Date(Date.now() + 120000000).toISOString(),
-      reminderAt: new Date(Date.now() + 100000000).toISOString(),
-      version: 2,
-      clientCreatedAt: new Date().toISOString(),
-      clientUpdatedAt: new Date().toISOString(),
-    },
-  },
-  {
-    id: 'task-3',
-    title: 'PWA Manifest configuration review',
-    description:
-      'Verify background worker configuration, caching thresholds and icons rendering properties.',
-    status: 'DONE',
-    priority: 'LOW',
-    dueDate: new Date(Date.now() - 36000000).toISOString(),
-    reminderAt: null,
-    version: 1,
-    clientCreatedAt: new Date().toISOString(),
-    clientUpdatedAt: new Date().toISOString(),
-  },
-  {
-    id: 'task-4',
-    title: 'Compile asset bundles for release',
-    description:
-      'Double check visual shadow assets and SVGs from Lucide collection are correctly cached.',
-    status: 'DONE',
-    priority: 'MEDIUM',
-    dueDate: null,
-    reminderAt: null,
-    version: 1,
-    clientCreatedAt: new Date().toISOString(),
-    clientUpdatedAt: new Date().toISOString(),
-  },
-];
+import type { ConflictResolution } from './utils/db';
+import { getApiErrorMessage } from './types/api';
 
 const nextStatusMap: Record<TaskStatus, TaskStatus> = {
   TODO: 'IN_PROGRESS',
   IN_PROGRESS: 'DONE',
   DONE: 'TODO',
 };
+
+function parseSortValue(sortValue: TaskSortValue): {
+  sortBy: TaskSortBy;
+  sortOrder: TaskSortOrder;
+} {
+  const [sortBy, sortOrder] = sortValue.split(':') as [
+    TaskSortBy,
+    TaskSortOrder,
+  ];
+
+  return { sortBy, sortOrder };
+}
 
 export default function App() {
   const dispatch = useAppDispatch();
@@ -107,18 +63,61 @@ export default function App() {
   } = useAppSelector((state) => state.auth);
   const [triggerGetCurrentUser] = useLazyGetCurrentUserQuery();
   const [logoutRequest] = useLogoutMutation();
-  const [tasks, setTasks] = React.useState<Task[]>(INITIAL_TASKS);
+  const [createTask, { isLoading: isCreatingTask }] = useCreateTaskMutation();
+  const [updateTask, { isLoading: isUpdatingTask }] = useUpdateTaskMutation();
+  const [deleteTask] = useDeleteTaskMutation();
   const [searchQuery, setSearchQuery] = React.useState('');
   const [statusFilter, setStatusFilter] =
     React.useState<TaskStatusFilter>('ALL');
   const [priorityFilter, setPriorityFilter] =
     React.useState<PriorityFilter>('ALL');
+  const [currentPage, setCurrentPage] = React.useState(1);
+  const [sortValue, setSortValue] =
+    React.useState<TaskSortValue>('updatedAt:desc');
   const [isTaskModalOpen, setIsTaskModalOpen] = React.useState(false);
   const [selectedTaskForEdit, setSelectedTaskForEdit] =
     React.useState<Task | null>(null);
   const [isConflictModalOpen, setIsConflictModalOpen] = React.useState(false);
   const [selectedTaskForConflict, setSelectedTaskForConflict] =
     React.useState<Task | null>(null);
+  const deferredSearchQuery = React.useDeferredValue(searchQuery);
+  const { sortBy, sortOrder } = React.useMemo(
+    () => parseSortValue(sortValue),
+    [sortValue],
+  );
+  const {
+    data: tasksResponse,
+    error: tasksError,
+    isFetching: isFetchingTasks,
+    isLoading: isLoadingTasks,
+    refetch: refetchTasks,
+  } = useGetTasksQuery(
+    {
+      limit: DEFAULT_TASK_PAGE_SIZE,
+      page: currentPage,
+      priority: priorityFilter,
+      search: deferredSearchQuery,
+      sortBy,
+      sortOrder,
+      status: statusFilter,
+    },
+    {
+      refetchOnMountOrArgChange: true,
+      skip: !isAuthenticated,
+    },
+  );
+
+  const paginatedTasks = tasksResponse?.items ?? [];
+  const taskListMeta = tasksResponse?.meta ?? DEFAULT_TASK_LIST_META;
+  const tasksErrorMessage = tasksError
+    ? getApiErrorMessage(tasksError, 'Unable to load your tasks right now.')
+    : null;
+  const allTasks = paginatedTasks;
+  const hasActiveFilters =
+    statusFilter !== 'ALL' ||
+    priorityFilter !== 'ALL' ||
+    deferredSearchQuery.trim().length > 0;
+  const isSavingTask = isCreatingTask || isUpdatingTask;
 
   React.useEffect(() => {
     if (isHydrated) {
@@ -147,6 +146,7 @@ export default function App() {
           return;
         }
 
+        dispatch(baseApi.util.resetApiState());
         dispatch(clearAuth());
         toast.error('Your saved session has expired. Please sign in again.');
       });
@@ -168,6 +168,7 @@ export default function App() {
       }
     }
 
+    dispatch(baseApi.util.resetApiState());
     dispatch(clearAuth());
     setIsTaskModalOpen(false);
     setSelectedTaskForEdit(null);
@@ -175,51 +176,60 @@ export default function App() {
     setSelectedTaskForConflict(null);
   };
 
-  const handleCreateTask = (taskData: TaskFormValues) => {
-    const newTask: Task = {
-      ...taskData,
-      id: `task-${Date.now()}`,
-      version: 1,
-      clientCreatedAt: new Date().toISOString(),
-      clientUpdatedAt: new Date().toISOString(),
-    };
-
-    setTasks((currentTasks) => [newTask, ...currentTasks]);
-    setIsTaskModalOpen(false);
-    setSelectedTaskForEdit(null);
+  const handleCreateTask = async (taskData: TaskFormValues) => {
+    try {
+      await createTask(taskData).unwrap();
+      toast.success('Task created successfully.');
+      setIsTaskModalOpen(false);
+      setSelectedTaskForEdit(null);
+      setCurrentPage(1);
+    } catch (error) {
+      const message = getApiErrorMessage(
+        error,
+        'Unable to create the task right now.',
+      );
+      toast.error(message);
+      throw new Error(message, { cause: error });
+    }
   };
 
-  const handleUpdateTask = (taskData: TaskFormValues) => {
+  const handleUpdateTask = async (taskData: TaskFormValues) => {
     if (!selectedTaskForEdit) {
-      return;
+      throw new Error('No task was selected for editing.');
     }
 
-    setTasks((currentTasks) =>
-      currentTasks.map((task) =>
-        task.id === selectedTaskForEdit.id
-          ? {
-              ...task,
-              ...taskData,
-              clientUpdatedAt: new Date().toISOString(),
-            }
-          : task,
-      ),
-    );
-    setIsTaskModalOpen(false);
+    try {
+      await updateTask({
+        data: taskData,
+        id: selectedTaskForEdit.id,
+      }).unwrap();
+      toast.success('Task updated successfully.');
+      setIsTaskModalOpen(false);
+    } catch (error) {
+      const message = getApiErrorMessage(
+        error,
+        'Unable to update the task right now.',
+      );
+      toast.error(message);
+      throw new Error(message, { cause: error });
+    }
   };
 
-  const handleToggleStatus = (task: Task) => {
-    setTasks((currentTasks) =>
-      currentTasks.map((currentTask) =>
-        currentTask.id === task.id
-          ? {
-              ...currentTask,
-              status: nextStatusMap[currentTask.status],
-              clientUpdatedAt: new Date().toISOString(),
-            }
-          : currentTask,
-      ),
-    );
+  const handleToggleStatus = async (task: Task) => {
+    try {
+      await updateTask({
+        data: {
+          status: nextStatusMap[task.status],
+        },
+        id: task.id,
+      }).unwrap();
+    } catch (error) {
+      const message = getApiErrorMessage(
+        error,
+        'Unable to update task status right now.',
+      );
+      toast.error(message);
+    }
   };
 
   const handleDeleteTask = async (id: string) => {
@@ -246,7 +256,19 @@ export default function App() {
     });
 
     if (result.isConfirmed) {
-      setTasks((currentTasks) => currentTasks.filter((task) => task.id !== id));
+      try {
+        await deleteTask(id).unwrap();
+        toast.success('Task deleted successfully.');
+        if (paginatedTasks.length === 1 && currentPage > 1) {
+          setCurrentPage((page) => page - 1);
+        }
+      } catch (error) {
+        const message = getApiErrorMessage(
+          error,
+          'Unable to delete the task right now.',
+        );
+        toast.error(message);
+      }
     }
   };
 
@@ -255,38 +277,33 @@ export default function App() {
     resolution: ConflictResolution,
     mergedTask?: Partial<Task>,
   ) => {
-    setTasks((currentTasks) =>
-      currentTasks.map((task) => {
-        if (task.id !== taskId) {
-          return task;
-        }
+    const activeTask = paginatedTasks.find((task) => task.id === taskId);
 
-        if (resolution === 'accept_server' && task.serverTaskForConflict) {
-          return {
-            ...task.serverTaskForConflict,
-            inConflict: false,
-            serverTaskForConflict: null,
-          };
-        }
+    if (!activeTask) {
+      return;
+    }
 
-        if (resolution === 'merge' && mergedTask) {
-          return {
-            ...task,
-            ...mergedTask,
-            inConflict: false,
-            serverTaskForConflict: null,
-            version: task.version + 1,
-          };
-        }
+    if (resolution === 'accept_server' && activeTask.serverTaskForConflict) {
+      void updateTask({
+        data: {
+          description: activeTask.serverTaskForConflict.description,
+          dueDate: activeTask.serverTaskForConflict.dueDate,
+          priority: activeTask.serverTaskForConflict.priority,
+          reminderAt: activeTask.serverTaskForConflict.reminderAt,
+          status: activeTask.serverTaskForConflict.status,
+          title: activeTask.serverTaskForConflict.title,
+        },
+        id: taskId,
+      });
+      return;
+    }
 
-        return {
-          ...task,
-          inConflict: false,
-          serverTaskForConflict: null,
-          version: task.version + 1,
-        };
-      }),
-    );
+    if (resolution === 'merge' && mergedTask) {
+      void updateTask({
+        data: mergedTask,
+        id: taskId,
+      });
+    }
   };
 
   const openEditModal = (task: Task) => {
@@ -304,42 +321,65 @@ export default function App() {
     setIsConflictModalOpen(true);
   };
 
-  const filteredTasks = tasks.filter((task) => {
-    const matchesSearch =
-      task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      task.description.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus =
-      statusFilter === 'ALL' || task.status === statusFilter;
-    const matchesPriority =
-      priorityFilter === 'ALL' || task.priority === priorityFilter;
+  const handleSearchChange = (value: string) => {
+    setSearchQuery(value);
+    setCurrentPage(1);
+  };
 
-    return matchesSearch && matchesStatus && matchesPriority;
-  });
+  const handleStatusFilterChange = (value: TaskStatusFilter) => {
+    setStatusFilter(value);
+    setCurrentPage(1);
+  };
+
+  const handlePriorityFilterChange = (value: PriorityFilter) => {
+    setPriorityFilter(value);
+    setCurrentPage(1);
+  };
+
+  const handleSortChange = (value: TaskSortValue) => {
+    setSortValue(value);
+    setCurrentPage(1);
+  };
+
+  const handleChangePage = (page: number) => {
+    const nextPage = Math.max(1, Math.min(page, taskListMeta.totalPages));
+    setCurrentPage(nextPage);
+  };
 
   return (
     <>
       <AppRouter
-        allTasks={tasks}
-        filteredTasks={filteredTasks}
+        allTasks={allTasks}
+        errorMessage={tasksErrorMessage}
+        hasActiveFilters={hasActiveFilters}
         isAuthReady={isHydrated && !isCheckingSession}
         isAuthenticated={isAuthenticated}
+        isFetchingTasks={isFetchingTasks}
+        isLoadingTasks={isLoadingTasks}
         isTaskModalOpen={isTaskModalOpen}
+        listMeta={taskListMeta}
+        onChangePage={handleChangePage}
         onDeleteTask={handleDeleteTask}
         onLogout={handleLogout}
         onOpenConflictModal={openConflictModal}
         onOpenCreateModal={openCreateModal}
         onOpenEditModal={openEditModal}
-        onPriorityFilterChange={setPriorityFilter}
-        onSearchChange={setSearchQuery}
-        onStatusFilterChange={setStatusFilter}
+        onPriorityFilterChange={handlePriorityFilterChange}
+        onRetryTasks={refetchTasks}
+        onSearchChange={handleSearchChange}
+        onSortChange={handleSortChange}
+        onStatusFilterChange={handleStatusFilterChange}
         onToggleTaskStatus={handleToggleStatus}
+        paginatedTasks={paginatedTasks}
         priorityFilter={priorityFilter}
         searchQuery={searchQuery}
+        sortValue={sortValue}
         statusFilter={statusFilter}
         user={user}
       />
 
       <TaskModal
+        isSaving={isSavingTask}
         key={selectedTaskForEdit?.id ?? (isTaskModalOpen ? 'create' : 'closed')}
         isOpen={isTaskModalOpen}
         task={selectedTaskForEdit}

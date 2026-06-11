@@ -3,6 +3,7 @@ import { toast } from 'sonner';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAppDispatch } from '../../app/hooks';
 import LoginView from '../../components/LoginView';
+import { baseApi } from '../../features/api/baseApi';
 import { useLoginMutation } from '../../features/auth/authApi';
 import { setCredentials } from '../../features/auth/authSlice';
 import type { LoginRequest } from '../../features/auth/authTypes';
@@ -31,6 +32,7 @@ export default function LoginPage() {
 
     try {
       const response = await login(values).unwrap();
+      dispatch(baseApi.util.resetApiState());
       dispatch(setCredentials(response.data));
       toast.success(response.message || 'Signed in successfully.');
       navigate(fromPath, { replace: true });

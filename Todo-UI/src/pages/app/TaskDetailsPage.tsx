@@ -1,9 +1,9 @@
 import { Link, useParams } from 'react-router-dom';
 import { Calendar, Clock, Edit2, ShieldAlert } from '../../components/AppIcons';
-import type { Task } from '../../utils/db';
+import { useGetTaskQuery } from '../../features/tasks/tasksApi';
+import type { Task } from '../../features/tasks/taskTypes';
 
 interface TaskDetailsPageProps {
-  tasks: Task[];
   onEditTask: (task: Task) => void;
   onOpenConflictModal: (task: Task) => void;
   onToggleTaskStatus: (task: Task) => void;
@@ -22,29 +22,54 @@ function formatValue(isoString: string | null) {
 }
 
 export default function TaskDetailsPage({
-  tasks,
   onEditTask,
   onOpenConflictModal,
   onToggleTaskStatus,
 }: TaskDetailsPageProps) {
   const { taskId } = useParams();
-  const task = tasks.find((item) => item.id === taskId);
+  const {
+    data: task,
+    error,
+    isLoading,
+    refetch,
+  } = useGetTaskQuery(taskId ?? '', {
+    skip: !taskId,
+  });
 
-  if (!task) {
+  if (isLoading) {
+    return (
+      <div className="h-72 animate-pulse rounded-2xl border border-slate-100 bg-white shadow-sm dark:border-slate-800/80 dark:bg-[#11141B]" />
+    );
+  }
+
+  if (error || !task) {
     return (
       <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm dark:border-slate-800/80 dark:bg-[#11141B]">
         <h1 className="text-lg font-black text-slate-900 dark:text-white">
-          Task not found
+          {error ? 'Unable to load task' : 'Task not found'}
         </h1>
         <p className="mt-2 text-sm text-slate-400">
-          The requested task does not exist in the current in-memory dataset.
+          {error
+            ? 'The task details request failed. Please try again.'
+            : 'The requested task does not exist in the current backend dataset.'}
         </p>
-        <Link
-          className="mt-4 inline-flex text-sm font-bold text-indigo-400 hover:text-indigo-300"
-          to="/app/tasks"
-        >
-          Return to Tasks
-        </Link>
+        <div className="mt-4 flex items-center gap-4">
+          {error ? (
+            <button
+              type="button"
+              onClick={() => refetch()}
+              className="rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white transition hover:bg-indigo-500"
+            >
+              Retry
+            </button>
+          ) : null}
+          <Link
+            className="inline-flex text-sm font-bold text-indigo-400 hover:text-indigo-300"
+            to="/app/tasks"
+          >
+            Return to Tasks
+          </Link>
+        </div>
       </div>
     );
   }

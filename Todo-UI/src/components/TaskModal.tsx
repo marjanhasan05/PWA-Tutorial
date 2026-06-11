@@ -8,10 +8,11 @@ import type {
 import { Bell, Calendar, CheckSquare, X } from './AppIcons';
 
 interface TaskModalProps {
+  isSaving?: boolean;
   task: Task | null;
   isOpen: boolean;
   onClose: () => void;
-  onSave: (taskData: TaskFormValues) => void;
+  onSave: (taskData: TaskFormValues) => Promise<void> | void;
 }
 
 function getInitialTaskState(task: Task | null) {
@@ -30,6 +31,7 @@ function getInitialTaskState(task: Task | null) {
 }
 
 export default function TaskModal({
+  isSaving = false,
   task,
   isOpen,
   onClose,
@@ -52,7 +54,7 @@ export default function TaskModal({
     return null;
   }
 
-  const handleSubmit = (event: React.FormEvent) => {
+  const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
 
     if (!title.trim()) {
@@ -60,15 +62,24 @@ export default function TaskModal({
       return;
     }
 
-    onSave({
-      title: title.trim(),
-      description: description.trim(),
-      status,
-      priority,
-      dueDate: dueDate ? new Date(dueDate).toISOString() : null,
-      reminderAt: reminderAt ? new Date(reminderAt).toISOString() : null,
-    });
-    onClose();
+    setError('');
+
+    try {
+      await onSave({
+        title: title.trim(),
+        description: description.trim(),
+        status,
+        priority,
+        dueDate: dueDate ? new Date(dueDate).toISOString() : null,
+        reminderAt: reminderAt ? new Date(reminderAt).toISOString() : null,
+      });
+    } catch (submissionError) {
+      setError(
+        submissionError instanceof Error
+          ? submissionError.message
+          : 'Unable to save the task right now.',
+      );
+    }
   };
 
   return (
@@ -199,6 +210,7 @@ export default function TaskModal({
               id="cancel-modal-btn"
               type="button"
               onClick={onClose}
+              disabled={isSaving}
               className="rounded-xl border border-slate-800 px-4 py-2.5 text-xs font-semibold text-slate-300 transition hover:bg-slate-800"
             >
               Cancel
@@ -206,9 +218,16 @@ export default function TaskModal({
             <button
               id="save-task-btn"
               type="submit"
+              disabled={isSaving}
               className="glow-indigo rounded-xl bg-indigo-600 px-5 py-2.5 text-xs font-bold text-white transition-all hover:bg-indigo-500"
             >
-              {task ? 'Update Task' : 'Add Task'}
+              {isSaving
+                ? task
+                  ? 'Updating...'
+                  : 'Saving...'
+                : task
+                  ? 'Update Task'
+                  : 'Add Task'}
             </button>
           </div>
         </form>

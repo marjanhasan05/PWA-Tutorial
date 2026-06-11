@@ -1,5 +1,5 @@
 import type { AuthUser } from '../../features/auth/authTypes';
-import type { Task } from '../../utils/db';
+import type { Task } from '../../features/tasks/taskTypes';
 
 interface ProfilePageProps {
   user: AuthUser | null;
@@ -21,8 +21,8 @@ export default function ProfilePage({ user, tasks }: ProfilePageProps) {
         </h1>
         <p className="mt-1 font-mono text-xs text-slate-400">{user?.email}</p>
         <p className="mt-4 max-w-md text-sm leading-relaxed text-slate-400">
-          This is still powered by the same fake local auth flow from Phase 1,
-          now mounted on a protected profile route for cleaner navigation.
+          Your authenticated profile now comes from the backend session, while
+          the rest of the dashboard stays close to the original UI flow.
         </p>
       </div>
 

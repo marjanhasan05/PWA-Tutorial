@@ -3,7 +3,7 @@ import PushNotificationManager from '../../components/PushNotificationManager';
 import TaskBoard from '../../components/TaskBoard';
 import type { TaskBoardControllerProps } from '../../routes/routeTypes';
 import { useNavigate } from 'react-router-dom';
-import type { Task } from '../../utils/db';
+import type { Task } from '../../features/tasks/taskTypes';
 
 interface DashboardPageProps extends TaskBoardControllerProps {
   allTasks: Task[];

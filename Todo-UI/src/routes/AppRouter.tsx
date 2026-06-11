@@ -14,37 +14,55 @@ import ProtectedRoute from './ProtectedRoute';
 
 export default function AppRouter({
   allTasks,
-  filteredTasks,
+  errorMessage,
+  hasActiveFilters,
   isAuthReady,
   isAuthenticated,
+  isFetchingTasks,
+  isLoadingTasks,
   isTaskModalOpen,
+  listMeta,
+  onChangePage,
   onDeleteTask,
   onLogout,
   onOpenConflictModal,
   onOpenCreateModal,
   onOpenEditModal,
   onPriorityFilterChange,
+  onRetryTasks,
   onSearchChange,
+  onSortChange,
   onStatusFilterChange,
   onToggleTaskStatus,
+  paginatedTasks,
   priorityFilter,
   searchQuery,
+  sortValue,
   statusFilter,
   user,
 }: AppRouterProps) {
   const boardProps = {
+    errorMessage,
+    hasActiveFilters,
+    isFetching: isFetchingTasks,
+    isLoading: isLoadingTasks,
+    listMeta,
+    onChangePage,
     onCreateTask: onOpenCreateModal,
     onDeleteTask,
     onEditTask: onOpenEditModal,
     onOpenConflictModal,
     onPriorityFilterChange,
+    onRetry: onRetryTasks,
     onSearchChange,
+    onSortChange,
     onStatusFilterChange,
     onToggleTaskStatus,
     priorityFilter,
     searchQuery,
+    sortValue,
     statusFilter,
-    tasks: filteredTasks,
+    tasks: paginatedTasks,
   };
 
   return (
@@ -86,7 +104,6 @@ export default function AppRouter({
                   onEditTask={onOpenEditModal}
                   onOpenConflictModal={onOpenConflictModal}
                   onToggleTaskStatus={onToggleTaskStatus}
-                  tasks={allTasks}
                 />
               }
               path="/app/tasks/:taskId"
