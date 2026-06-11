@@ -1,4 +1,4 @@
-import type { Task } from '../utils/db';
+import type { ConflictResolution, Task } from '../utils/db';
 import { ChevronRight, ShieldAlert, X } from './AppIcons';
 
 interface ConflictModalProps {
@@ -7,7 +7,7 @@ interface ConflictModalProps {
   onClose: () => void;
   onResolve: (
     taskId: string,
-    resolution: 'keep_local' | 'accept_server' | 'merge',
+    resolution: ConflictResolution,
     mergedTask?: Partial<Task>,
   ) => void;
 }

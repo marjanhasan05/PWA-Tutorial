@@ -1,10 +1,14 @@
 import React from 'react';
+import Swal from 'sweetalert2';
+import 'sweetalert2/dist/sweetalert2.min.css';
 import type {
   AuthTab,
+  ConflictResolution,
   PriorityFilter,
   Task,
   TaskFormValues,
   TaskStatus,
+  TaskStatusFilter,
 } from './utils/db';
 import AnalyticsPanel from './components/AnalyticsPanel';
 import {
@@ -107,9 +111,8 @@ export default function App() {
   } | null>(null);
   const [tasks, setTasks] = React.useState<Task[]>(INITIAL_TASKS);
   const [searchQuery, setSearchQuery] = React.useState('');
-  const [statusFilter, setStatusFilter] = React.useState<'ALL' | TaskStatus>(
-    'ALL',
-  );
+  const [statusFilter, setStatusFilter] =
+    React.useState<TaskStatusFilter>('ALL');
   const [priorityFilter, setPriorityFilter] =
     React.useState<PriorityFilter>('ALL');
   const [isTaskModalOpen, setIsTaskModalOpen] = React.useState(false);
@@ -133,11 +136,9 @@ export default function App() {
   };
 
   const handleLogout = () => {
-    if (window.confirm('Are you sure you want to logout?')) {
-      setUser(null);
-      setIsAuthenticated(false);
-      setAuthTab('login');
-    }
+    setUser(null);
+    setIsAuthenticated(false);
+    setAuthTab('login');
   };
 
   const handleCreateTask = (taskData: TaskFormValues) => {
@@ -186,15 +187,37 @@ export default function App() {
     );
   };
 
-  const handleDeleteTask = (id: string) => {
-    if (window.confirm('Are you sure you want to delete this task?')) {
+  const handleDeleteTask = async (id: string) => {
+    const result = await Swal.fire({
+      title: 'Delete this task?',
+      text: 'This action will permanently remove it from the current dashboard.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Delete Task',
+      cancelButtonText: 'Keep Task',
+      reverseButtons: true,
+      background: '#11141B',
+      color: '#E2E8F0',
+      confirmButtonColor: '#DC2626',
+      cancelButtonColor: '#334155',
+      customClass: {
+        popup: 'rounded-[24px] border border-slate-800 shadow-2xl',
+        title: 'text-left text-xl font-black text-white',
+        htmlContainer: 'text-left text-sm text-slate-400',
+        actions: 'gap-3',
+        confirmButton: 'rounded-xl px-4 py-2 text-xs font-bold',
+        cancelButton: 'rounded-xl px-4 py-2 text-xs font-bold',
+      },
+    });
+
+    if (result.isConfirmed) {
       setTasks((currentTasks) => currentTasks.filter((task) => task.id !== id));
     }
   };
 
   const handleResolveConflictChoice = (
     taskId: string,
-    resolution: 'keep_local' | 'accept_server' | 'merge',
+    resolution: ConflictResolution,
     mergedTask?: Partial<Task>,
   ) => {
     setTasks((currentTasks) =>
@@ -341,7 +364,7 @@ export default function App() {
                 id="filter-tasks-status"
                 value={statusFilter}
                 onChange={(event) =>
-                  setStatusFilter(event.target.value as 'ALL' | TaskStatus)
+                  setStatusFilter(event.target.value as TaskStatusFilter)
                 }
                 className="cursor-pointer rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-600 dark:border-slate-800 dark:bg-[#0D1016] dark:text-slate-300"
               >
