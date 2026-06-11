@@ -1,6 +1,0 @@
-{
-  "name": "Offline Task Manager",
-  "description": "An offline-first progressive web application for managing tasks with automatic background syncing and push notification support.",
-  "requestFramePermissions": ["notifications"],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
-}
