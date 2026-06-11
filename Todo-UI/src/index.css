@@ -1,5 +1,9 @@
 @import 'tailwindcss';
 
+:root {
+  color-scheme: dark;
+}
+
 body {
   margin: 0;
   font-family:
@@ -10,6 +14,47 @@ body {
     BlinkMacSystemFont,
     'Segoe UI',
     sans-serif;
-  background-color: #f8fafc;
-  color: #0f172a;
+  background-color: #020617;
+  color: #e2e8f0;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 180ms ease-out;
+}
+
+.glow-indigo {
+  box-shadow:
+    0 0 0 1px rgba(99, 102, 241, 0.12),
+    0 14px 32px rgba(79, 70, 229, 0.16);
+}
+
+.glow-amber {
+  box-shadow:
+    0 0 0 1px rgba(245, 158, 11, 0.12),
+    0 10px 24px rgba(245, 158, 11, 0.12);
+}
+
+.glow-emerald {
+  box-shadow:
+    0 0 0 1px rgba(16, 185, 129, 0.12),
+    0 10px 24px rgba(16, 185, 129, 0.12);
 }
