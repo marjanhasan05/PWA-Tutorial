@@ -1,3 +1,7 @@
+self.addEventListener('activate', (event) => {
+  event.waitUntil(self.clients.claim());
+});
+
 self.addEventListener('push', (event) => {
   const defaultPayload = {
     body: 'You have a new TaskFlow notification.',
@@ -37,18 +41,23 @@ self.addEventListener('push', (event) => {
   })();
 
   const title = payload.title || defaultPayload.title;
-
-  event.waitUntil(
-    self.registration.showNotification(title, {
-      badge: payload.badge || '/pwa-192x192.png',
-      body: payload.body || defaultPayload.body,
-      data: {
-        ...(payload.data || {}),
-        url: payload.url || defaultPayload.url,
+  const notificationTag =
+    payload.tag ||
+    `taskflow-${payload.type || 'push'}-${payload.serverTime || Date.now()}`;
+  const options = {
+    badge: payload.badge || '/pwa-192x192.png',
+    body: payload.body || defaultPayload.body,
+    data: {
+      ...(payload.data || {}),
+      url: payload.url || defaultPayload.url,
       },
       icon: payload.icon || '/pwa-192x192.png',
-      tag: payload.tag || 'taskflow-notification',
-    }),
+      renotify: true,
+      tag: notificationTag,
+    };
+
+  event.waitUntil(
+    self.registration.showNotification(title, options),
   );
 });
 
