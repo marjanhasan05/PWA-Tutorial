@@ -13,7 +13,6 @@ export type SyncOperationTaskPayload = Partial<
     | 'reminderAt'
     | 'clientCreatedAt'
     | 'clientUpdatedAt'
-    | 'deletedAt'
   >
 >;
 

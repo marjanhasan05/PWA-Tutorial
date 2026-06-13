@@ -9,6 +9,66 @@ export function isPushNotificationSupported() {
   );
 }
 
+const PUSH_SERVICE_WORKER_URL = '/push-sw.js';
+const PUSH_SERVICE_WORKER_SCOPE = '/push-notifications/';
+
+async function ensureServiceWorkerRegistration() {
+  if (!('serviceWorker' in navigator)) {
+    throw new Error('Service workers are not supported in this browser.');
+  }
+
+  const existingRegistration = await navigator.serviceWorker.getRegistration(
+    PUSH_SERVICE_WORKER_SCOPE,
+  );
+  if (existingRegistration) {
+    return existingRegistration;
+  }
+
+  const registration = await navigator.serviceWorker.register(
+    PUSH_SERVICE_WORKER_URL,
+    {
+      scope: PUSH_SERVICE_WORKER_SCOPE,
+    },
+  );
+
+  if (registration.active) {
+    return registration;
+  }
+
+  return new Promise<ServiceWorkerRegistration>((resolve, reject) => {
+    const serviceWorker =
+      registration.installing ?? registration.waiting ?? registration.active;
+    const timeoutId = window.setTimeout(() => {
+      reject(
+        new Error(
+          'Service worker registration did not become ready in time. Reload the app and try again.',
+        ),
+      );
+    }, 10000);
+
+    if (!serviceWorker) {
+      window.clearTimeout(timeoutId);
+      reject(
+        new Error(
+          'Push service worker could not be initialized. Reload the app and try again.',
+        ),
+      );
+      return;
+    }
+
+    const handleStateChange = () => {
+      if (serviceWorker.state === 'activated') {
+        window.clearTimeout(timeoutId);
+        resolve(registration);
+        serviceWorker.removeEventListener('statechange', handleStateChange);
+      }
+    };
+
+    serviceWorker.addEventListener('statechange', handleStateChange);
+    handleStateChange();
+  });
+}
+
 export function urlBase64ToUint8Array(base64String: string) {
   const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
   const normalizedBase64 = (base64String + padding)
@@ -40,7 +100,7 @@ function arrayBufferToBase64(buffer: ArrayBuffer | null) {
 }
 
 export async function getServiceWorkerRegistration() {
-  return navigator.serviceWorker.ready;
+  return ensureServiceWorkerRegistration();
 }
 
 export async function getExistingPushSubscription() {

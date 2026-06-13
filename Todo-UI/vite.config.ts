@@ -53,9 +53,7 @@ export default defineConfig({
         cleanupOutdatedCaches: true,
         globPatterns: ['**/*.{js,css,html,ico,png,svg,webmanifest}'],
         navigateFallback: 'index.html',
-        navigateFallbackDenylist: [
-          /^\/(auth|tasks|users|sync)(\/|$)/,
-        ],
+        navigateFallbackDenylist: [/^\/(auth|tasks|users|sync)(\/|$)/],
         runtimeCaching: [
           {
             urlPattern: ({ request, sameOrigin }) =>

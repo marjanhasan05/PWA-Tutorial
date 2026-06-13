@@ -50,10 +50,13 @@ function toSyncTaskPayload(operation: PendingOperation) {
     return undefined;
   }
 
+  if (operation.type === 'DELETE') {
+    return undefined;
+  }
+
   const {
     clientCreatedAt,
     clientUpdatedAt,
-    deletedAt,
     description,
     dueDate,
     priority,
@@ -65,7 +68,6 @@ function toSyncTaskPayload(operation: PendingOperation) {
   return {
     clientCreatedAt,
     clientUpdatedAt,
-    deletedAt,
     description,
     dueDate,
     priority,
