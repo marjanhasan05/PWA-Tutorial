@@ -34,15 +34,19 @@ I checked the current repository and corrected a few handoff risks:
 
 1. The current UI intentionally exposes `search`, `sort`, `page`, and `limit` behavior directly.
 2. The backend can support `status` and `priority` query params, but the current UI does not show those dropdowns.
-3. PWA and push should be tested with:
+3. The app currently enforces a dark-only theme for consistency because the
+   design system is not yet finished for true light mode.
+4. Cached task loading is intentionally cache-first, and post-sync UI keeps the
+   synced cached state visible until the live backend refresh settles.
+5. PWA and push should be tested with:
 
 ```bash
 npm run build
 npm run preview
 ```
 
-4. `App.tsx` is still the main coordinator for task flow. That is intentional in this project and not an accident.
-5. For later phases, “exact copy-paste starter code” means teammates should copy
+6. `App.tsx` is still the main coordinator for task flow. That is intentional in this project and not an accident.
+7. For later phases, “exact copy-paste starter code” means teammates should copy
    the exact contents of the linked real project files into the same paths in
    their own working repo.
 
@@ -956,6 +960,7 @@ Expected output checklist:
 
 - fetched tasks are written to IndexedDB
 - cached tasks can be read back
+- cached tasks can be shown before the backend request finishes
 - pending operation records can be stored
 - sync metadata can be stored
 
@@ -1015,6 +1020,8 @@ Expected output checklist:
 - offline create/edit/delete works locally
 - online create/edit/delete uses backend
 - sync state is visible
+- after offline sync returns online, synced tasks stay visible until the live
+  refresh completes
 
 Visual target:
 
@@ -1047,6 +1054,8 @@ Expected output checklist:
 - install section appears
 - update prompt can appear on new builds
 - app shell can reopen offline after first visit
+- if the browser does not expose a direct install prompt, the install action
+  should still show manual platform guidance instead of a dead disabled button
 
 Visual target:
 
@@ -1136,6 +1145,7 @@ Since this document is text-only, use these as your screenshot targets:
    - top navigation
    - sync/data-source status bar
    - install/update sections
+   - dark theme remains visually consistent even when the device prefers light mode
 
 3. Tasks screen
    - search input
@@ -1144,7 +1154,7 @@ Since this document is text-only, use these as your screenshot targets:
    - pagination
 
 4. Offline state
-   - cached snapshot or local pending changes label
+   - cached snapshot, refreshing latest data, or local pending changes label
    - queue count visible
 
 5. Conflict state

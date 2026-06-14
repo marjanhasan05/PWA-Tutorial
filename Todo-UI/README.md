@@ -18,6 +18,10 @@ browser push subscription UI.
   [BEGINNER_BUILD_GUIDE.md](./BEGINNER_BUILD_GUIDE.md)
 - Step-by-step implementation playbook:
   [BEGINNER_COPY_PASTE_PLAYBOOK.md](./BEGINNER_COPY_PASTE_PLAYBOOK.md)
+- PWA learning roadmap and anti-pattern guide:
+  [PWA_LEARNING_PLAN_PLAYBOOK.md](./PWA_LEARNING_PLAN_PLAYBOOK.md)
+- PWA theory, fundamentals, and tutorial notes:
+  [PWA_THEORY_FUNDAMENTALS_PLAYBOOK.md](./PWA_THEORY_FUNDAMENTALS_PLAYBOOK.md)
 
 ## What It Includes
 
@@ -31,6 +35,9 @@ browser push subscription UI.
 - Conflict review UI for queued offline changes
 - PWA manifest, install prompt, update prompt, and offline app shell caching
 - Browser push notification subscribe/unsubscribe/test flow
+- Cache-first task loading with background refresh
+- Post-sync refresh protection to avoid temporary task disappearance or unstable ordering
+- Dark-only enforced theme for visual consistency across devices
 
 ## Environment Variables
 
@@ -116,9 +123,14 @@ src/
 ### Offline + Sync
 
 - Tasks are cached in IndexedDB after successful fetches.
+- Cached tasks can render immediately while the backend refresh happens in the
+  background.
 - Offline create/edit/delete/status changes are stored locally and queued.
 - When the browser comes back online, queued operations can sync through
   `POST /sync`.
+- After sync, the app keeps showing the synced cached state until the fresh
+  backend refetch has truly settled, which avoids temporary disappearance or
+  unstable ordering on slower/mobile devices.
 - Conflicts stay visible until the user resolves them.
 
 ### PWA
@@ -126,6 +138,12 @@ src/
 - The app shell and static assets are cached by the service worker.
 - Protected API responses are not blindly cached in the service worker.
 - IndexedDB remains the source of offline task data.
+- The install section always exposes an `Install App` action while the app is
+  not installed, and falls back to manual install instructions when the browser
+  does not expose a direct prompt.
+- Browsers do not all expose the same install flow. On iPhone/iPad Safari and
+  some Android/browser combinations, manual "Add to Home Screen" guidance is
+  expected behavior rather than a bug.
 
 ### Push Notifications
 
@@ -145,6 +163,11 @@ npm run build
 ## Known Limitations
 
 - Browser push support varies by browser and platform.
+- The app currently enforces a dark-only theme. A fully designed light theme is
+  still a future improvement.
+- Because the app is offline-first, the UI may intentionally show a cached task
+  snapshot first and then replace it with fresh backend data after the network
+  request completes.
 - Conflict resolution currently focuses on safe keep-server or retry-local
   flows rather than advanced field-by-field merge tooling.
 - Offline task data is intentionally handled through IndexedDB, not through

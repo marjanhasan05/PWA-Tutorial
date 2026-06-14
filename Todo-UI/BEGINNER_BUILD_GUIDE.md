@@ -42,6 +42,9 @@ These notes match the current repository and are important for teammates:
   `limit` behavior.
 - The backend contract can support more task query params like `status` and
   `priority`, but the current UI intentionally does not show those dropdowns.
+- The app currently enforces a dark-only theme because the visual system is
+  designed around dark surfaces and a partial light mode was producing broken
+  colors.
 - For service worker, install, and push-notification validation, prefer:
 
 ```bash
@@ -53,6 +56,9 @@ instead of relying only on `npm run dev`.
 - For the more advanced phases, the safest exact source of truth is the current
   repository files themselves. This guide explains the architecture, while the
   playbook points teammates to the exact files to copy.
+- Recent stability fixes also matter to understand the current behavior:
+  cached tasks now render immediately, and after offline sync the app keeps the
+  synced cached state visible until the live backend refresh has completed.
 
 ## Tech Stack
 
@@ -451,6 +457,13 @@ This project now uses a cache-first/stale-while-revalidate style:
 4. replace the visible tasks when fresh data arrives
 5. update the cache
 
+One important detail from the current app:
+
+- after offline sync completes, the UI keeps using the synced cached state
+  until the follow-up backend refresh fully settles
+- this prevents tasks from disappearing temporarily or jumping into a strange
+  order on slower devices
+
 ### Why this matters
 
 This feels much better in PWAs than showing a blank loading screen every time.
@@ -548,6 +561,13 @@ Important files:
 - allows install
 - supports update prompts
 
+In the current app, the install section also avoids a dead disabled state:
+
+- if the browser exposes a direct install prompt, the button uses it
+- otherwise, the button shows manual install instructions for that platform
+- this is expected on platforms like iPhone/iPad Safari, where a normal
+  `beforeinstallprompt` style install flow is usually unavailable
+
 ### Important best practice
 
 Do not blindly cache protected API responses in the service worker.
@@ -609,6 +629,7 @@ This project now clearly labels:
 - `Cached Snapshot`
 - `Local Pending Changes`
 - `Offline Cached Snapshot`
+- `Refreshing Latest Data`
 
 ### Why?
 
