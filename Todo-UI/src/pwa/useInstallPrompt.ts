@@ -8,6 +8,21 @@ type BeforeInstallPromptEvent = Event & {
   }>;
 };
 
+function detectPlatform(): 'ios' | 'android' | 'other' {
+  if (typeof window === 'undefined') {
+    return 'other';
+  }
+
+  const userAgent = window.navigator.userAgent.toLowerCase();
+  const touchPoints = window.navigator.maxTouchPoints ?? 0;
+  const isIOS =
+    /iphone|ipad|ipod/.test(userAgent) ||
+    (userAgent.includes('macintosh') && touchPoints > 1);
+  const isAndroid = userAgent.includes('android');
+
+  return isIOS ? 'ios' : isAndroid ? 'android' : 'other';
+}
+
 export function useInstallPrompt() {
   const [installEvent, setInstallEvent] =
     React.useState<BeforeInstallPromptEvent | null>(null);
@@ -22,6 +37,7 @@ export function useInstallPrompt() {
         true
     );
   });
+  const [platform] = React.useState<'ios' | 'android' | 'other'>(detectPlatform);
 
   React.useEffect(() => {
     const handleBeforeInstallPrompt = (event: Event) => {
@@ -65,6 +81,7 @@ export function useInstallPrompt() {
   return {
     canInstall: Boolean(installEvent) && !isInstalled,
     isInstalled,
+    platform,
     promptInstall,
   };
 }

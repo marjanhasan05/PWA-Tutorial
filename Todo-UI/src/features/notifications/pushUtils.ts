@@ -1,43 +1,93 @@
 import type { PushSubscriptionPayload } from './notificationTypes';
+import {
+  getPwaServiceWorkerRegistration,
+  initializePwaRegistration,
+  waitForPwaServiceWorkerRegistration,
+} from '../../pwa/pwaRegistration';
 
-export function isPushNotificationSupported() {
+const LEGACY_PUSH_SERVICE_WORKER_SCOPE = '/push-notifications/';
+const ROOT_SERVICE_WORKER_SCOPE = '/';
+
+function isStandaloneDisplayMode() {
   return (
-    typeof window !== 'undefined' &&
-    'Notification' in window &&
-    'serviceWorker' in navigator &&
-    'PushManager' in window
+    window.matchMedia('(display-mode: standalone)').matches ||
+    (window.navigator as Navigator & { standalone?: boolean }).standalone ===
+      true
   );
 }
 
-const PUSH_SERVICE_WORKER_URL = '/push-sw.js';
-const PUSH_SERVICE_WORKER_SCOPE = '/push-notifications/';
+function isAppleMobileDevice() {
+  const userAgent = window.navigator.userAgent.toLowerCase();
+  const touchPoints = window.navigator.maxTouchPoints ?? 0;
 
-async function ensureServiceWorkerRegistration() {
+  return (
+    /iphone|ipad|ipod/.test(userAgent) ||
+    (userAgent.includes('macintosh') && touchPoints > 1)
+  );
+}
+
+export function getPushUnsupportedReason() {
+  if (typeof window === 'undefined') {
+    return 'Push notifications are not available during server rendering.';
+  }
+
+  if (!('serviceWorker' in navigator)) {
+    return 'This browser does not support service workers.';
+  }
+
+  if (!('Notification' in window)) {
+    return 'This browser does not support the Notification API.';
+  }
+
+  if (!('PushManager' in window)) {
+    return 'This browser does not support the Push API.';
+  }
+
+  if (isAppleMobileDevice() && !isStandaloneDisplayMode()) {
+    return 'On iPhone and iPad, install TaskFlow to the Home Screen and open it from there before subscribing to push notifications.';
+  }
+
+  return null;
+}
+
+export function isPushNotificationSupported() {
+  return getPushUnsupportedReason() === null;
+}
+
+async function getLegacyServiceWorkerRegistration() {
+  if (!('serviceWorker' in navigator)) {
+    return undefined;
+  }
+
+  const registrations = await navigator.serviceWorker.getRegistrations();
+  const legacyScopeUrl = new URL(
+    LEGACY_PUSH_SERVICE_WORKER_SCOPE,
+    window.location.origin,
+  ).href;
+  const rootScopeUrl = new URL(ROOT_SERVICE_WORKER_SCOPE, window.location.origin)
+    .href;
+  const registration = registrations.find(
+    (candidate) =>
+      candidate.scope === legacyScopeUrl && candidate.scope !== rootScopeUrl,
+  );
+  return registration;
+}
+
+async function waitForServiceWorkerReady() {
   if (!('serviceWorker' in navigator)) {
     throw new Error('Service workers are not supported in this browser.');
   }
 
-  const existingRegistration = await navigator.serviceWorker.getRegistration(
-    PUSH_SERVICE_WORKER_SCOPE,
-  );
-  if (existingRegistration) {
+  initializePwaRegistration();
+
+  const existingRegistration =
+    getPwaServiceWorkerRegistration() ||
+    (await navigator.serviceWorker.getRegistration());
+  if (existingRegistration?.active) {
     return existingRegistration;
   }
 
-  const registration = await navigator.serviceWorker.register(
-    PUSH_SERVICE_WORKER_URL,
-    {
-      scope: PUSH_SERVICE_WORKER_SCOPE,
-    },
-  );
-
-  if (registration.active) {
-    return registration;
-  }
-
   return new Promise<ServiceWorkerRegistration>((resolve, reject) => {
-    const serviceWorker =
-      registration.installing ?? registration.waiting ?? registration.active;
     const timeoutId = window.setTimeout(() => {
       reject(
         new Error(
@@ -46,26 +96,38 @@ async function ensureServiceWorkerRegistration() {
       );
     }, 10000);
 
-    if (!serviceWorker) {
-      window.clearTimeout(timeoutId);
-      reject(
-        new Error(
-          'Push service worker could not be initialized. Reload the app and try again.',
-        ),
-      );
-      return;
-    }
+    waitForPwaServiceWorkerRegistration()
+      .then((registration) => {
+        if (registration.active) {
+          window.clearTimeout(timeoutId);
+          resolve(registration);
+          return;
+        }
 
-    const handleStateChange = () => {
-      if (serviceWorker.state === 'activated') {
+        const serviceWorker =
+          registration.installing ?? registration.waiting ?? registration.active;
+
+        if (!serviceWorker) {
+          throw new Error(
+            'Service worker registration exists, but no worker instance is available yet.',
+          );
+        }
+
+        const handleStateChange = () => {
+          if (serviceWorker.state === 'activated') {
+            window.clearTimeout(timeoutId);
+            serviceWorker.removeEventListener('statechange', handleStateChange);
+            resolve(registration);
+          }
+        };
+
+        serviceWorker.addEventListener('statechange', handleStateChange);
+        handleStateChange();
+      })
+      .catch((error) => {
         window.clearTimeout(timeoutId);
-        resolve(registration);
-        serviceWorker.removeEventListener('statechange', handleStateChange);
-      }
-    };
-
-    serviceWorker.addEventListener('statechange', handleStateChange);
-    handleStateChange();
+        reject(error);
+      });
   });
 }
 
@@ -100,7 +162,7 @@ function arrayBufferToBase64(buffer: ArrayBuffer | null) {
 }
 
 export async function getServiceWorkerRegistration() {
-  return ensureServiceWorkerRegistration();
+  return waitForServiceWorkerReady();
 }
 
 export async function getExistingPushSubscription() {
@@ -108,8 +170,25 @@ export async function getExistingPushSubscription() {
   return registration.pushManager.getSubscription();
 }
 
+export async function cleanupLegacyPushRegistration() {
+  const legacyRegistration = await getLegacyServiceWorkerRegistration();
+  const legacySubscription = await legacyRegistration?.pushManager.getSubscription();
+
+  await legacySubscription?.unsubscribe();
+  if (legacyRegistration) {
+    await legacyRegistration.unregister();
+  }
+}
+
 export async function requestPushSubscription(vapidPublicKey: string) {
+  await cleanupLegacyPushRegistration();
+
   const registration = await getServiceWorkerRegistration();
+  const existingSubscription = await registration.pushManager.getSubscription();
+
+  if (existingSubscription) {
+    return existingSubscription;
+  }
 
   return registration.pushManager.subscribe({
     applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),

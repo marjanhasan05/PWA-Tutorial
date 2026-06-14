@@ -3,7 +3,7 @@ import { Check, CheckSquare, Plus } from '../components/AppIcons';
 import { useInstallPrompt } from './useInstallPrompt';
 
 export default function InstallPrompt() {
-  const { canInstall, isInstalled, promptInstall } = useInstallPrompt();
+  const { canInstall, isInstalled, platform, promptInstall } = useInstallPrompt();
 
   const handleInstall = async () => {
     const outcome = await promptInstall();
@@ -28,7 +28,11 @@ export default function InstallPrompt() {
     ? 'TaskFlow is already installed or running in standalone mode on this device.'
     : canInstall
       ? 'Add the app to your device for a faster offline-friendly experience.'
-      : 'The install button becomes active when the browser decides this app is installable. If needed, keep using the app for a moment and check the browser install menu too.';
+      : platform === 'ios'
+        ? 'On iPhone and iPad, Safari usually does not show a browser prompt here. Open the Share menu and choose Add to Home Screen to install the app.'
+        : platform === 'android'
+          ? 'If Chrome does not expose the browser prompt here, use the browser menu and choose Add to Home screen or Install app instead.'
+          : 'The install button becomes active when the browser decides this app is installable. If needed, keep using the app for a moment and check the browser install menu too.';
 
   return (
     <div className="rounded-2xl border border-indigo-500/25 bg-indigo-500/10 p-3 text-slate-100 shadow-sm">

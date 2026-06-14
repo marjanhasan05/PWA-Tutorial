@@ -8,6 +8,9 @@ export default defineConfig({
     react(),
     tailwindcss(),
     VitePWA({
+      strategies: 'injectManifest',
+      srcDir: 'src',
+      filename: 'sw.ts',
       registerType: 'autoUpdate',
       includeAssets: [
         'favicon.svg',
@@ -18,7 +21,7 @@ export default defineConfig({
         'pwa-512x512.png',
         'pwa-maskable-512x512.png',
       ],
-      injectRegister: 'auto',
+      injectRegister: false,
       manifest: {
         name: 'TaskFlow Todo UI',
         short_name: 'TaskFlow',
@@ -49,37 +52,12 @@ export default defineConfig({
           },
         ],
       },
-      workbox: {
-        cleanupOutdatedCaches: true,
+      injectManifest: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,webmanifest}'],
-        navigateFallback: 'index.html',
-        navigateFallbackDenylist: [/^\/(auth|tasks|users|sync)(\/|$)/],
-        runtimeCaching: [
-          {
-            urlPattern: ({ request, sameOrigin }) =>
-              sameOrigin &&
-              ['style', 'script', 'worker'].includes(request.destination),
-            handler: 'StaleWhileRevalidate',
-            options: {
-              cacheName: 'app-shell-resources',
-            },
-          },
-          {
-            urlPattern: ({ request, sameOrigin }) =>
-              sameOrigin && request.destination === 'image',
-            handler: 'StaleWhileRevalidate',
-            options: {
-              cacheName: 'app-image-assets',
-              expiration: {
-                maxEntries: 32,
-                maxAgeSeconds: 60 * 60 * 24 * 30,
-              },
-            },
-          },
-        ],
       },
       devOptions: {
         enabled: true,
+        navigateFallback: 'index.html',
         type: 'module',
       },
     }),

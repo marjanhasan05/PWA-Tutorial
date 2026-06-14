@@ -8,6 +8,7 @@ import {
   useSendTestNotificationMutation,
 } from './notificationsApi';
 import {
+  getPushUnsupportedReason,
   getExistingPushSubscription,
   isPushNotificationSupported,
   requestPushSubscription,
@@ -44,7 +45,8 @@ export function usePushNotifications() {
     useSendTestNotificationMutation();
 
   const refreshStatus = React.useCallback(async () => {
-    if (!isPushNotificationSupported()) {
+    const unsupportedReason = getPushUnsupportedReason();
+    if (unsupportedReason) {
       setState(unsupportedState);
       return;
     }
@@ -78,7 +80,10 @@ export function usePushNotifications() {
 
   const requestPermission = React.useCallback(async () => {
     if (!isPushNotificationSupported()) {
-      toast.error('Push notifications are not supported in this browser.');
+      toast.error(
+        getPushUnsupportedReason() ||
+          'Push notifications are not supported in this browser.',
+      );
       return 'unsupported' as const;
     }
 
@@ -107,7 +112,10 @@ export function usePushNotifications() {
 
   const subscribe = React.useCallback(async () => {
     if (!isPushNotificationSupported()) {
-      toast.error('Push notifications are not supported in this browser.');
+      toast.error(
+        getPushUnsupportedReason() ||
+          'Push notifications are not supported in this browser.',
+      );
       return;
     }
 
@@ -199,7 +207,9 @@ export function usePushNotifications() {
         body: 'This is a test notification',
         title: 'Hello',
       }).unwrap();
-      toast.success('Test notification request sent.');
+      toast.success(
+        'Test push request sent to the backend. Device notification delivery depends on the active service worker and browser notification handling.',
+      );
     } catch (error) {
       toast.error(
         getApiErrorMessage(
@@ -223,6 +233,7 @@ export function usePushNotifications() {
     unsubscribe,
     unsupportedReason: state.isSupported
       ? null
-      : 'This browser does not support service worker push notifications.',
+      : getPushUnsupportedReason() ||
+        'This browser does not support service worker push notifications.',
   };
 }
