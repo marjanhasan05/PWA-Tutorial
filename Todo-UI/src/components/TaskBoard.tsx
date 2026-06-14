@@ -14,11 +14,7 @@ export default function TaskBoard({
   tasks,
   searchQuery,
   sortValue,
-  statusFilter,
-  priorityFilter,
   onSearchChange,
-  onStatusFilterChange,
-  onPriorityFilterChange,
   onRetry,
   onSortChange,
   onCreateTask,
@@ -49,34 +45,6 @@ export default function TaskBoard({
         </div>
 
         <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
-          <select
-            id="filter-tasks-status"
-            value={statusFilter}
-            onChange={(event) =>
-              onStatusFilterChange(event.target.value as typeof statusFilter)
-            }
-            className="cursor-pointer rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-600 dark:border-slate-800 dark:bg-[#0D1016] dark:text-slate-300"
-          >
-            <option value="ALL">All Status</option>
-            <option value="TODO">Todo</option>
-            <option value="IN_PROGRESS">In Progress</option>
-            <option value="DONE">Completed</option>
-          </select>
-
-          <select
-            id="filter-tasks-priority"
-            value={priorityFilter}
-            onChange={(event) =>
-              onPriorityFilterChange(event.target.value as typeof priorityFilter)
-            }
-            className="cursor-pointer rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-600 dark:border-slate-800 dark:bg-[#0D1016] dark:text-slate-300"
-          >
-            <option value="ALL">All Priorities</option>
-            <option value="LOW">Low</option>
-            <option value="MEDIUM">Medium</option>
-            <option value="HIGH">High</option>
-          </select>
-
           <select
             id="filter-tasks-sort"
             value={sortValue}

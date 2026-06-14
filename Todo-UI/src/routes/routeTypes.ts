@@ -1,11 +1,9 @@
 import type { AuthUser } from '../features/auth/authTypes';
 import type { SyncMetaRecord, TaskSyncBadgeState } from '../features/offline/offlineTypes';
 import type {
-  PriorityFilter,
   Task,
   TaskListMeta,
   TaskSortValue,
-  TaskStatusFilter,
 } from '../features/tasks/taskTypes';
 
 export interface TaskBoardControllerProps {
@@ -19,11 +17,7 @@ export interface TaskBoardControllerProps {
   onChangePage: (page: number) => void;
   searchQuery: string;
   sortValue: TaskSortValue;
-  statusFilter: TaskStatusFilter;
-  priorityFilter: PriorityFilter;
   onSearchChange: (value: string) => void;
-  onStatusFilterChange: (value: TaskStatusFilter) => void;
-  onPriorityFilterChange: (value: PriorityFilter) => void;
   onRetry: () => void;
   onSortChange: (value: TaskSortValue) => void;
   onCreateTask: () => void;
@@ -56,20 +50,16 @@ export interface AppRouterProps {
   onOpenConflictModal: (task: Task) => void;
   onOpenCreateModal: () => void;
   onOpenEditModal: (task: Task) => void;
-  onPriorityFilterChange: (value: PriorityFilter) => void;
   onRetrySync: () => void | Promise<void>;
   onRetryTasks: () => void;
   onSearchChange: (value: string) => void;
   onSortChange: (value: TaskSortValue) => void;
-  onStatusFilterChange: (value: TaskStatusFilter) => void;
   onSyncNow: () => void | Promise<void>;
   onToggleTaskStatus: (task: Task) => void;
   pendingOperationCount: number;
   paginatedTasks: Task[];
-  priorityFilter: PriorityFilter;
   searchQuery: string;
   syncMeta: SyncMetaRecord;
   sortValue: TaskSortValue;
-  statusFilter: TaskStatusFilter;
   user: AuthUser | null;
 }

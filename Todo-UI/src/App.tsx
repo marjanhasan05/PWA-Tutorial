@@ -44,14 +44,12 @@ import { useSync } from './features/sync/useSync';
 import {
   DEFAULT_TASK_LIST_META,
   DEFAULT_TASK_PAGE_SIZE,
-  type PriorityFilter,
   type Task,
   type TaskFormValues,
   type TaskSortBy,
   type TaskSortOrder,
   type TaskSortValue,
   type TaskStatus,
-  type TaskStatusFilter,
 } from './features/tasks/taskTypes';
 import {
   useCreateTaskMutation,
@@ -180,10 +178,6 @@ export default function App() {
   const [updateTask, { isLoading: isUpdatingTask }] = useUpdateTaskMutation();
   const [deleteTask] = useDeleteTaskMutation();
   const [searchQuery, setSearchQuery] = React.useState('');
-  const [statusFilter, setStatusFilter] =
-    React.useState<TaskStatusFilter>('ALL');
-  const [priorityFilter, setPriorityFilter] =
-    React.useState<PriorityFilter>('ALL');
   const [cachedTasks, setCachedTasks] = React.useState<Task[]>([]);
   const [pendingOperations, setPendingOperations] = React.useState<
     PendingOperation[]
@@ -217,11 +211,9 @@ export default function App() {
     {
       limit: DEFAULT_TASK_PAGE_SIZE,
       page: currentPage,
-      priority: priorityFilter,
       search: deferredSearchQuery,
       sortBy,
       sortOrder,
-      status: statusFilter,
     },
     {
       refetchOnMountOrArgChange: true,
@@ -238,14 +230,6 @@ export default function App() {
           return false;
         }
 
-        if (statusFilter !== 'ALL' && task.status !== statusFilter) {
-          return false;
-        }
-
-        if (priorityFilter !== 'ALL' && task.priority !== priorityFilter) {
-          return false;
-        }
-
         if (!normalizedSearch) {
           return true;
         }
@@ -256,7 +240,7 @@ export default function App() {
       sortBy,
       sortOrder,
     );
-  }, [cachedTasks, deferredSearchQuery, priorityFilter, sortBy, sortOrder, statusFilter]);
+  }, [cachedTasks, deferredSearchQuery, sortBy, sortOrder]);
   const localListMeta = React.useMemo(
     () => buildLocalListMeta(currentPage, cachedVisibleTasks.length),
     [cachedVisibleTasks.length, currentPage],
@@ -285,10 +269,7 @@ export default function App() {
   const allTasks = isUsingOfflineData || shouldUseCachedFallback
     ? cachedVisibleTasks
     : paginatedTasks;
-  const hasActiveFilters =
-    statusFilter !== 'ALL' ||
-    priorityFilter !== 'ALL' ||
-    deferredSearchQuery.trim().length > 0;
+  const hasActiveFilters = deferredSearchQuery.trim().length > 0;
   const isSavingTask = isCreatingTask || isUpdatingTask;
   const conflictItems = React.useMemo(
     () => getConflictItems(pendingOperations, cachedTasks),
@@ -1018,16 +999,6 @@ export default function App() {
     setCurrentPage(1);
   };
 
-  const handleStatusFilterChange = (value: TaskStatusFilter) => {
-    setStatusFilter(value);
-    setCurrentPage(1);
-  };
-
-  const handlePriorityFilterChange = (value: PriorityFilter) => {
-    setPriorityFilter(value);
-    setCurrentPage(1);
-  };
-
   const handleSortChange = (value: TaskSortValue) => {
     setSortValue(value);
     setCurrentPage(1);
@@ -1064,21 +1035,17 @@ export default function App() {
         onOpenConflictModal={openConflictModal}
         onOpenCreateModal={openCreateModal}
         onOpenEditModal={openEditModal}
-        onPriorityFilterChange={handlePriorityFilterChange}
         onRetrySync={handleSyncNow}
         onRetryTasks={refetchTasks}
         onSearchChange={handleSearchChange}
         onSortChange={handleSortChange}
-        onStatusFilterChange={handleStatusFilterChange}
         onSyncNow={handleSyncNow}
         onToggleTaskStatus={handleToggleStatus}
         pendingOperationCount={pendingOperationCount}
         paginatedTasks={paginatedTasks}
-        priorityFilter={priorityFilter}
         searchQuery={searchQuery}
         syncMeta={syncMeta}
         sortValue={sortValue}
-        statusFilter={statusFilter}
         user={user}
         getTaskSyncState={getTaskSyncState}
       />

@@ -1,3 +1,4 @@
+import Swal from 'sweetalert2';
 import { toast } from 'sonner';
 import { Check, CheckSquare, Plus } from '../components/AppIcons';
 import { useInstallPrompt } from './useInstallPrompt';
@@ -5,7 +6,38 @@ import { useInstallPrompt } from './useInstallPrompt';
 export default function InstallPrompt() {
   const { canInstall, isInstalled, platform, promptInstall } = useInstallPrompt();
 
+  const showManualInstallHelp = async () => {
+    const instructions =
+      platform === 'ios'
+        ? 'Open this app in Safari, tap Share, then choose Add to Home Screen.'
+        : platform === 'android'
+          ? 'Open the browser menu, then choose Install app or Add to Home screen.'
+          : 'Use your browser install menu to add this app to your device.';
+
+    await Swal.fire({
+      title: 'Install TaskFlow',
+      text: instructions,
+      icon: 'info',
+      confirmButtonText: 'Got It',
+      background: '#11141B',
+      color: '#E2E8F0',
+      confirmButtonColor: '#4F46E5',
+      customClass: {
+        popup: 'rounded-[24px] border border-slate-800 shadow-2xl',
+        title: 'text-left text-xl font-black text-white',
+        htmlContainer: 'text-left text-sm text-slate-400',
+        actions: 'gap-3',
+        confirmButton: 'rounded-xl px-4 py-2 text-xs font-bold',
+      },
+    });
+  };
+
   const handleInstall = async () => {
+    if (!canInstall) {
+      await showManualInstallHelp();
+      return;
+    }
+
     const outcome = await promptInstall();
 
     if (outcome === 'accepted') {
@@ -22,17 +54,17 @@ export default function InstallPrompt() {
     ? 'Installed'
     : canInstall
       ? 'Ready to Install'
-      : 'Waiting for Browser Prompt';
+      : 'Install Available';
 
   const helperText = isInstalled
     ? 'TaskFlow is already installed or running in standalone mode on this device.'
     : canInstall
       ? 'Add the app to your device for a faster offline-friendly experience.'
       : platform === 'ios'
-        ? 'On iPhone and iPad, Safari usually does not show a browser prompt here. Open the Share menu and choose Add to Home Screen to install the app.'
+        ? 'Tap Install App for the steps. On iPhone and iPad, Safari usually uses Share -> Add to Home Screen instead of a browser prompt.'
         : platform === 'android'
-          ? 'If Chrome does not expose the browser prompt here, use the browser menu and choose Add to Home screen or Install app instead.'
-          : 'The install button becomes active when the browser decides this app is installable. If needed, keep using the app for a moment and check the browser install menu too.';
+          ? 'Tap Install App. If Chrome does not expose a browser prompt, we will show the menu-based install steps instead.'
+          : 'Tap Install App to try the browser prompt. If the browser does not expose one, we will show the manual install steps.';
 
   return (
     <div className="rounded-2xl border border-indigo-500/25 bg-indigo-500/10 p-3 text-slate-100 shadow-sm">
@@ -54,7 +86,7 @@ export default function InstallPrompt() {
         <button
           type="button"
           onClick={handleInstall}
-          disabled={!canInstall || isInstalled}
+          disabled={isInstalled}
           className="glow-indigo inline-flex items-center justify-center gap-1 rounded-xl bg-indigo-600 px-3 py-2 text-xs font-bold text-white transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {isInstalled ? (
@@ -62,7 +94,7 @@ export default function InstallPrompt() {
           ) : (
             <Plus className="h-3.5 w-3.5" />
           )}
-          {isInstalled ? 'Installed' : canInstall ? 'Install App' : 'Install Unavailable'}
+          {isInstalled ? 'Installed' : 'Install App'}
         </button>
       </div>
     </div>
