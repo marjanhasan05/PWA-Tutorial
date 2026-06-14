@@ -5,6 +5,20 @@ real task CRUD, protected routing, IndexedDB-backed offline support, queued
 offline mutations, sync with conflict handling, PWA install/update support, and
 browser push subscription UI.
 
+## Live Links
+
+- Live app: `https://task-manager-pwa-app.netlify.app/login`
+- Live API: `https://to-do-backend-jq65.onrender.com/`
+- Backend repository:
+  `https://github.com/marjanhasan05/to-do-backend`
+
+## Documentation
+
+- Architecture and learning guide:
+  [BEGINNER_BUILD_GUIDE.md](./BEGINNER_BUILD_GUIDE.md)
+- Step-by-step implementation playbook:
+  [BEGINNER_COPY_PASTE_PLAYBOOK.md](./BEGINNER_COPY_PASTE_PLAYBOOK.md)
+
 ## What It Includes
 
 - React Router app shell with protected routes
@@ -94,8 +108,9 @@ src/
 ### Tasks
 
 - Online task reads and mutations use RTK Query.
-- Task list filtering, search, sorting, and pagination use backend query
-  params.
+- Task list search, sorting, and pagination use backend query params.
+- The current UI intentionally keeps only search and sort controls visible,
+  even though the backend contract can support more filters later.
 - Task deletes require confirmation.
 
 ### Offline + Sync
@@ -138,9 +153,21 @@ npm run build
   app still builds successfully, but route-level code-splitting would be a good
   future improvement.
 
-## Good Next Improvements
 
-- Add route-level code-splitting for bundle size
-- Expand conflict resolution UI with richer merge tools
-- Add background sync or retry heuristics if the backend contract supports it
-- Add automated tests around auth, offline queue behavior, and sync flows
+## Credits
+
+Author:
+
+- Marjan Hasan Moon
+- GitHub: `https://github.com/marjanhasan05`
+- LinkedIn: `https://www.linkedin.com/in/marjanhasan/`
+
+Huge shout out to the backend developer:
+
+- Arifur Rahman
+- LinkedIn: `https://www.linkedin.com/in/arifur-rahman223`
+- GitHub: `https://github.com/arif1101`
+
+Backend used for this app:
+
+- `https://github.com/marjanhasan05/to-do-backend`
