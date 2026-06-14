@@ -21,6 +21,7 @@ export default function AppRouter({
   isAuthReady,
   isAuthenticated,
   isOnline,
+  isShowingCachedSnapshot,
   isSyncing,
   isUsingOfflineData,
   isFetchingTasks,
@@ -97,6 +98,7 @@ export default function AppRouter({
               <AppLayout
                 conflictCount={conflictCount}
                 isOnline={isOnline}
+                isShowingCachedSnapshot={isShowingCachedSnapshot}
                 isSyncing={isSyncing}
                 isUsingOfflineData={isUsingOfflineData}
                 onLogout={onLogout}

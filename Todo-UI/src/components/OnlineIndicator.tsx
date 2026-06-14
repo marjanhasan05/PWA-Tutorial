@@ -4,6 +4,7 @@ import type { SyncMetaRecord } from '../features/offline/offlineTypes';
 interface OnlineIndicatorProps {
   conflictCount: number;
   isOnline: boolean;
+  isShowingCachedSnapshot: boolean;
   isSyncing: boolean;
   isUsingOfflineData: boolean;
   onOpenConflicts: () => void;
@@ -16,6 +17,7 @@ interface OnlineIndicatorProps {
 export default function OnlineIndicator({
   conflictCount,
   isOnline,
+  isShowingCachedSnapshot,
   isSyncing,
   isUsingOfflineData,
   onOpenConflicts,
@@ -59,8 +61,32 @@ export default function OnlineIndicator({
       : syncMeta.lastSyncStatus === 'FAILED'
         ? 'border-rose-500/20 text-rose-300'
         : syncMeta.lastSyncStatus === 'CONFLICT'
-          ? 'border-amber-500/20 text-amber-300'
-          : 'border-indigo-500/20 text-indigo-300';
+        ? 'border-amber-500/20 text-amber-300'
+        : 'border-indigo-500/20 text-indigo-300';
+
+  const dataSourceLabel = !isOnline
+    ? 'Offline Cached Snapshot'
+    : isUsingOfflineData
+      ? 'Local Pending Changes'
+      : isShowingCachedSnapshot
+        ? 'Cached Snapshot'
+        : 'Fresh Backend Data';
+
+  const dataSourceTone = !isOnline
+    ? 'border-amber-500/20 text-amber-300'
+    : isUsingOfflineData || isShowingCachedSnapshot
+      ? 'border-indigo-500/20 text-indigo-300'
+      : 'border-emerald-500/20 text-emerald-300';
+
+  const helperMessage = !isOnline
+    ? 'You are viewing cached tasks offline. New changes stay queued locally until you reconnect.'
+    : conflictCount > 0
+      ? 'Resolve sync conflicts before your queued changes can fully settle.'
+      : pendingOperationCount > 0
+        ? 'You are viewing local changes that have not been fully synced yet.'
+        : isShowingCachedSnapshot
+          ? 'You are seeing the last cached snapshot while the app refreshes from the backend in the background.'
+          : 'You are viewing the latest backend data and the cache is up to date.';
 
   return (
     <div className="flex w-full flex-col gap-2">
@@ -83,14 +109,14 @@ export default function OnlineIndicator({
                 {isOnline ? 'Network: Online' : 'Network: Offline'}
               </span>
               <span
-                className={`flex items-center gap-1 rounded border px-1.5 py-1 text-[10px] ${syncStatusTone}`}
+                className={`flex items-center gap-1 rounded border px-1.5 py-1 text-[10px] ${dataSourceTone}`}
               >
                 {isOnline ? (
                   <Wifi className="h-3.5 w-3.5" />
                 ) : (
                   <WifiOff className="h-3.5 w-3.5 text-amber-500" />
                 )}
-                {isUsingOfflineData ? 'Using Cached Tasks' : 'Live Backend Data'}
+                {dataSourceLabel}
               </span>
               <span
                 className={`rounded border px-1.5 py-1 text-[10px] font-bold uppercase tracking-wide ${syncStatusTone}`}
@@ -102,13 +128,7 @@ export default function OnlineIndicator({
               Last Database Sync: {formatLastSynced(syncMeta.lastSyncAt)}
             </span>
             <span className="mt-1 text-[11px] text-slate-500">
-              {!isOnline
-                ? 'You can keep browsing cached tasks. New changes will stay queued locally.'
-                : conflictCount > 0
-                  ? 'Resolve sync conflicts before your queued changes can fully settle.'
-                  : pendingOperationCount > 0
-                    ? 'Queued changes are waiting for the next sync pass.'
-                    : 'Your task shell is connected and ready.'}
+              {helperMessage}
             </span>
           </div>
         </div>

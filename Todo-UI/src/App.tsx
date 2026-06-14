@@ -100,6 +100,69 @@ function sliceLocalTasks(tasks: Task[], page: number) {
   return tasks.slice(start, start + DEFAULT_TASK_PAGE_SIZE);
 }
 
+const taskPriorityRank: Record<Task['priority'], number> = {
+  HIGH: 3,
+  MEDIUM: 2,
+  LOW: 1,
+};
+
+const taskStatusRank: Record<TaskStatus, number> = {
+  TODO: 1,
+  IN_PROGRESS: 2,
+  DONE: 3,
+};
+
+function compareDateValues(
+  left: string | null | undefined,
+  right: string | null | undefined,
+  sortOrder: TaskSortOrder,
+) {
+  const leftValue = left ? new Date(left).getTime() : Number.POSITIVE_INFINITY;
+  const rightValue = right ? new Date(right).getTime() : Number.POSITIVE_INFINITY;
+
+  return sortOrder === 'asc' ? leftValue - rightValue : rightValue - leftValue;
+}
+
+function sortTasksLocally(
+  tasks: Task[],
+  sortBy: TaskSortBy,
+  sortOrder: TaskSortOrder,
+) {
+  return [...tasks].sort((leftTask, rightTask) => {
+    switch (sortBy) {
+      case 'createdAt':
+        return compareDateValues(
+          leftTask.createdAt,
+          rightTask.createdAt,
+          sortOrder,
+        );
+      case 'dueDate':
+        return compareDateValues(leftTask.dueDate, rightTask.dueDate, sortOrder);
+      case 'priority': {
+        const difference =
+          taskPriorityRank[leftTask.priority] - taskPriorityRank[rightTask.priority];
+        return sortOrder === 'asc' ? difference : -difference;
+      }
+      case 'status': {
+        const difference =
+          taskStatusRank[leftTask.status] - taskStatusRank[rightTask.status];
+        return sortOrder === 'asc' ? difference : -difference;
+      }
+      case 'title': {
+        const comparison = leftTask.title.localeCompare(rightTask.title);
+        return sortOrder === 'asc' ? comparison : -comparison;
+      }
+      case 'updatedAt':
+      default:
+        return compareDateValues(
+          leftTask.updatedAt,
+          rightTask.updatedAt,
+          sortOrder,
+        );
+    }
+  });
+}
+
 export default function App() {
   const dispatch = useAppDispatch();
   const isOnline = useOnlineStatus();
@@ -166,10 +229,34 @@ export default function App() {
     },
   );
   const pendingOperationCount = pendingOperations.length;
-  const cachedVisibleTasks = React.useMemo(
-    () => cachedTasks.filter((task) => !task.deletedAt),
-    [cachedTasks],
-  );
+  const cachedVisibleTasks = React.useMemo(() => {
+    const normalizedSearch = deferredSearchQuery.trim().toLowerCase();
+
+    return sortTasksLocally(
+      cachedTasks.filter((task) => {
+        if (task.deletedAt) {
+          return false;
+        }
+
+        if (statusFilter !== 'ALL' && task.status !== statusFilter) {
+          return false;
+        }
+
+        if (priorityFilter !== 'ALL' && task.priority !== priorityFilter) {
+          return false;
+        }
+
+        if (!normalizedSearch) {
+          return true;
+        }
+
+        const searchableText = `${task.title} ${task.description}`.toLowerCase();
+        return searchableText.includes(normalizedSearch);
+      }),
+      sortBy,
+      sortOrder,
+    );
+  }, [cachedTasks, deferredSearchQuery, priorityFilter, sortBy, sortOrder, statusFilter]);
   const localListMeta = React.useMemo(
     () => buildLocalListMeta(currentPage, cachedVisibleTasks.length),
     [cachedVisibleTasks.length, currentPage],
@@ -179,17 +266,25 @@ export default function App() {
     [cachedVisibleTasks, localListMeta.page],
   );
   const isUsingOfflineData = !isOnline || pendingOperationCount > 0;
-  const paginatedTasks = isUsingOfflineData
+  const shouldUseCachedFallback =
+    !isUsingOfflineData &&
+    isOfflineStateReady &&
+    !tasksResponse &&
+    cachedTasks.length > 0;
+  const isShowingCachedSnapshot = shouldUseCachedFallback;
+  const paginatedTasks = isUsingOfflineData || shouldUseCachedFallback
     ? localPaginatedTasks
     : tasksResponse?.items ?? [];
-  const taskListMeta = isUsingOfflineData
+  const taskListMeta = isUsingOfflineData || shouldUseCachedFallback
     ? localListMeta
     : tasksResponse?.meta ?? DEFAULT_TASK_LIST_META;
   const tasksErrorMessage =
-    isOnline && !isUsingOfflineData && tasksError
+    isOnline && !isUsingOfflineData && !shouldUseCachedFallback && tasksError
       ? getApiErrorMessage(tasksError, 'Unable to load your tasks right now.')
       : null;
-  const allTasks = isUsingOfflineData ? cachedVisibleTasks : paginatedTasks;
+  const allTasks = isUsingOfflineData || shouldUseCachedFallback
+    ? cachedVisibleTasks
+    : paginatedTasks;
   const hasActiveFilters =
     statusFilter !== 'ALL' ||
     priorityFilter !== 'ALL' ||
@@ -953,10 +1048,13 @@ export default function App() {
         isAuthReady={isHydrated && !isCheckingSession}
         isAuthenticated={isAuthenticated}
         isOnline={isOnline}
+        isShowingCachedSnapshot={isShowingCachedSnapshot}
         isSyncing={isSyncing}
         isUsingOfflineData={isUsingOfflineData}
         isFetchingTasks={isFetchingTasks}
-        isLoadingTasks={isLoadingTasks || !isOfflineStateReady}
+        isLoadingTasks={
+          !isOfflineStateReady || (!shouldUseCachedFallback && isLoadingTasks)
+        }
         isTaskModalOpen={isTaskModalOpen}
         listMeta={taskListMeta}
         onChangePage={handleChangePage}

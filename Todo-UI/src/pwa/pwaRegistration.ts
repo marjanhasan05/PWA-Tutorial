@@ -7,7 +7,7 @@ type PwaRegistrationState = {
   offlineReady: boolean;
 };
 
-const state: PwaRegistrationState = {
+let state: PwaRegistrationState = {
   error: null,
   needRefresh: false,
   offlineReady: false,
@@ -25,7 +25,10 @@ function emitChange() {
 }
 
 function setState(nextState: Partial<PwaRegistrationState>) {
-  Object.assign(state, nextState);
+  state = {
+    ...state,
+    ...nextState,
+  };
   emitChange();
 }
 

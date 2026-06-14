@@ -16,6 +16,7 @@ import PwaUpdatePrompt from '../pwa/PwaUpdatePrompt';
 interface AppLayoutProps {
   conflictCount: number;
   isOnline: boolean;
+  isShowingCachedSnapshot: boolean;
   isSyncing: boolean;
   isUsingOfflineData: boolean;
   onOpenConflicts: () => void;
@@ -37,6 +38,7 @@ const navItems = [
 export default function AppLayout({
   conflictCount,
   isOnline,
+  isShowingCachedSnapshot,
   isSyncing,
   isUsingOfflineData,
   onOpenConflicts,
@@ -95,6 +97,7 @@ export default function AppLayout({
         <OnlineIndicator
           conflictCount={conflictCount}
           isOnline={isOnline}
+          isShowingCachedSnapshot={isShowingCachedSnapshot}
           isSyncing={isSyncing}
           isUsingOfflineData={isUsingOfflineData}
           onOpenConflicts={onOpenConflicts}
