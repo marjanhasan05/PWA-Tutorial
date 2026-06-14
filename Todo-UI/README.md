@@ -160,6 +160,66 @@ npm run lint
 npm run build
 ```
 
+## Push Notification Test Checklist
+
+Use this checklist when you want to verify that install flow, device
+subscription, backend delivery, and real system notifications are working
+properly.
+
+### Android Checklist
+
+1. Deploy the app on HTTPS.
+2. Open it in Chrome on Android.
+3. Make sure the app loads normally and the service worker installs.
+4. Install the app from the browser menu if available.
+5. Open the installed app.
+6. Login.
+7. Go to the notification settings or profile area.
+8. Click `Subscribe Device`.
+9. Confirm notification permission is granted.
+10. Confirm the UI shows subscribed.
+11. Click `Send Test Notification`.
+12. Check for a real system notification in the notification tray.
+13. Lock the phone and send another test.
+14. Background the app and send another test.
+15. Tap the notification and confirm it opens or focuses the app.
+
+### iPhone Checklist
+
+1. Deploy the app on HTTPS.
+2. Open it in Safari.
+3. Use `Share -> Add to Home Screen`.
+4. Open the app from the Home Screen icon.
+5. Confirm you are not testing inside the Safari tab.
+6. Login.
+7. Go to the notification settings or profile area.
+8. Click `Subscribe Device`.
+9. Allow notifications when iOS asks.
+10. Confirm the UI shows subscribed.
+11. Click `Send Test Notification`.
+12. Check Notification Center or the lock screen for the real notification.
+13. Background the app and test again.
+14. Lock the phone and test again.
+15. Tap the notification and confirm it opens the app.
+
+### Backend Checklist
+
+1. `POST /notifications/subscriptions` succeeds.
+2. The subscription is saved in the backend.
+3. `POST /notifications/test` succeeds.
+4. The backend actually sends web push to the saved subscription.
+5. The backend uses the correct VAPID key pair.
+
+### If It Fails
+
+1. Check notification permission status.
+2. Check the app is really installed on iPhone.
+3. Check the device is subscribed.
+4. Check the backend saved the subscription endpoint.
+5. Check the backend test API returns success.
+6. Check the service worker is active.
+7. Check system notification settings are enabled for the browser or app.
+
 ## Known Limitations
 
 - Browser push support varies by browser and platform.
