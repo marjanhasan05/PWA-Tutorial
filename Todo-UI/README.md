@@ -18,6 +18,8 @@ browser push subscription UI.
   [BEGINNER_BUILD_GUIDE.md](./BEGINNER_BUILD_GUIDE.md)
 - Step-by-step implementation playbook:
   [BEGINNER_COPY_PASTE_PLAYBOOK.md](./BEGINNER_COPY_PASTE_PLAYBOOK.md)
+- Developer architecture documentation:
+  [pwa_documentation.md](./pwa_documentation.md)
 - PWA learning roadmap and anti-pattern guide:
   [PWA_LEARNING_PLAN_PLAYBOOK.md](./PWA_LEARNING_PLAN_PLAYBOOK.md)
 - PWA theory, fundamentals, and tutorial notes:
