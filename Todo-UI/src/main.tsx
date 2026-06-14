@@ -7,6 +7,7 @@ import App from './App';
 import './index.css';
 import { initializePwaRegistration } from './pwa/pwaRegistration';
 
+document.documentElement.classList.add('dark');
 initializePwaRegistration();
 
 createRoot(document.getElementById('root')!).render(

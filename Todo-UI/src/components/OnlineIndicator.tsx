@@ -4,6 +4,7 @@ import type { SyncMetaRecord } from '../features/offline/offlineTypes';
 interface OnlineIndicatorProps {
   conflictCount: number;
   isOnline: boolean;
+  isRefreshingAfterSync: boolean;
   isShowingCachedSnapshot: boolean;
   isSyncing: boolean;
   isUsingOfflineData: boolean;
@@ -17,6 +18,7 @@ interface OnlineIndicatorProps {
 export default function OnlineIndicator({
   conflictCount,
   isOnline,
+  isRefreshingAfterSync,
   isShowingCachedSnapshot,
   isSyncing,
   isUsingOfflineData,
@@ -84,6 +86,8 @@ export default function OnlineIndicator({
       ? 'Resolve sync conflicts before your queued changes can fully settle.'
       : pendingOperationCount > 0
         ? 'You are viewing local changes that have not been fully synced yet.'
+        : isRefreshingAfterSync
+          ? 'Your offline changes are already applied locally. The app is now fetching the latest backend snapshot to settle ordering and server metadata.'
         : isShowingCachedSnapshot
           ? 'You are seeing the last cached snapshot while the app refreshes from the backend in the background.'
           : 'You are viewing the latest backend data and the cache is up to date.';
@@ -123,6 +127,11 @@ export default function OnlineIndicator({
               >
                 {syncStatusLabel}
               </span>
+              {isRefreshingAfterSync ? (
+                <span className="rounded border border-sky-500/20 px-1.5 py-1 text-[10px] font-bold uppercase tracking-wide text-sky-300">
+                  Refreshing Latest Data
+                </span>
+              ) : null}
             </div>
             <span className="font-mono text-[11px] text-slate-400">
               Last Database Sync: {formatLastSynced(syncMeta.lastSyncAt)}

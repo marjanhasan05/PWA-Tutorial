@@ -195,6 +195,11 @@ export default function App() {
   const [isConflictModalOpen, setIsConflictModalOpen] = React.useState(false);
   const [focusedConflictOperationId, setFocusedConflictOperationId] =
     React.useState<string | null>(null);
+  const [preferCachedTasksUntilLiveRefresh, setPreferCachedTasksUntilLiveRefresh] =
+    React.useState(false);
+  const [hasStartedPostSyncRefresh, setHasStartedPostSyncRefresh] =
+    React.useState(false);
+  const hasObservedPostSyncFetchRef = React.useRef(false);
   const deferredSearchQuery = React.useDeferredValue(searchQuery);
   const userId = user?.id ?? null;
   const { sortBy, sortOrder } = React.useMemo(
@@ -249,12 +254,15 @@ export default function App() {
     () => sliceLocalTasks(cachedVisibleTasks, localListMeta.page),
     [cachedVisibleTasks, localListMeta.page],
   );
-  const isUsingOfflineData = !isOnline || pendingOperationCount > 0;
+  const isUsingOfflineData =
+    !isOnline || pendingOperationCount > 0 || preferCachedTasksUntilLiveRefresh;
   const shouldUseCachedFallback =
     !isUsingOfflineData &&
     isOfflineStateReady &&
     !tasksResponse &&
     cachedTasks.length > 0;
+  const isRefreshingAfterSync =
+    preferCachedTasksUntilLiveRefresh && hasStartedPostSyncRefresh;
   const isShowingCachedSnapshot = shouldUseCachedFallback;
   const paginatedTasks = isUsingOfflineData || shouldUseCachedFallback
     ? localPaginatedTasks
@@ -410,6 +418,10 @@ export default function App() {
       return;
     }
 
+    if (preferCachedTasksUntilLiveRefresh) {
+      return;
+    }
+
     const persistFetchedTasks = async () => {
       const now = new Date().toISOString();
       const mergedTasks =
@@ -431,7 +443,16 @@ export default function App() {
     };
 
     void persistFetchedTasks();
-  }, [isOnline, pendingOperations, syncMeta.lastSyncAt, syncMeta.lastSyncAttemptAt, syncMeta.lastSyncStatus, tasksResponse, userId]);
+  }, [
+    isOnline,
+    pendingOperations,
+    preferCachedTasksUntilLiveRefresh,
+    syncMeta.lastSyncAt,
+    syncMeta.lastSyncAttemptAt,
+    syncMeta.lastSyncStatus,
+    tasksResponse,
+    userId,
+  ]);
 
   React.useEffect(() => {
     if (!userId || !isOnline || !tasksError) {
@@ -514,9 +535,46 @@ export default function App() {
     [],
   );
 
+  React.useEffect(() => {
+    if (!preferCachedTasksUntilLiveRefresh || !hasStartedPostSyncRefresh) {
+      return;
+    }
+
+    if (isFetchingTasks) {
+      hasObservedPostSyncFetchRef.current = true;
+      return;
+    }
+
+    if (!hasObservedPostSyncFetchRef.current) {
+      return;
+    }
+
+    if (tasksError) {
+      return;
+    }
+
+    if (tasksResponse) {
+      queueMicrotask(() => {
+        setPreferCachedTasksUntilLiveRefresh(false);
+        setHasStartedPostSyncRefresh(false);
+      });
+    }
+  }, [
+    hasStartedPostSyncRefresh,
+    isFetchingTasks,
+    preferCachedTasksUntilLiveRefresh,
+    tasksError,
+    tasksResponse,
+  ]);
+
   const { isSyncing, syncNow } = useSync({
     cachedTasks,
     isOnline,
+    onPostSyncRefreshStart: () => {
+      hasObservedPostSyncFetchRef.current = false;
+      setPreferCachedTasksUntilLiveRefresh(true);
+      setHasStartedPostSyncRefresh(true);
+    },
     onSyncComplete: handleSyncComplete,
     pendingOperations,
     refetchTasks,
@@ -1019,6 +1077,7 @@ export default function App() {
         isAuthReady={isHydrated && !isCheckingSession}
         isAuthenticated={isAuthenticated}
         isOnline={isOnline}
+        isRefreshingAfterSync={isRefreshingAfterSync}
         isShowingCachedSnapshot={isShowingCachedSnapshot}
         isSyncing={isSyncing}
         isUsingOfflineData={isUsingOfflineData}

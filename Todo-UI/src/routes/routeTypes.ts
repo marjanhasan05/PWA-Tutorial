@@ -36,6 +36,7 @@ export interface AppRouterProps {
   isAuthReady: boolean;
   isAuthenticated: boolean;
   isOnline: boolean;
+  isRefreshingAfterSync: boolean;
   isShowingCachedSnapshot: boolean;
   isSyncing: boolean;
   isUsingOfflineData: boolean;

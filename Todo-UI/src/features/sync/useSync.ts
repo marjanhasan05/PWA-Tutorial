@@ -11,6 +11,7 @@ import { useSyncTasksMutation } from './syncApi';
 type UseSyncOptions = {
   cachedTasks: Task[];
   isOnline: boolean;
+  onPostSyncRefreshStart?: () => void;
   onSyncComplete: (result: {
     cachedTasks: Task[];
     pendingOperations: PendingOperation[];
@@ -30,6 +31,7 @@ export function useSync({
   refetchTasks,
   syncMeta,
   userId,
+  onPostSyncRefreshStart,
 }: UseSyncOptions) {
   const [syncTasks, { isLoading: isSyncing }] = useSyncTasksMutation();
   const hasAttemptedAutoSyncRef = React.useRef(false);
@@ -60,6 +62,7 @@ export function useSync({
       });
 
       onSyncComplete(result);
+      onPostSyncRefreshStart?.();
       await Promise.resolve(refetchTasks());
 
       if (result.pendingOperations.some((operation) => operation.status === 'CONFLICT')) {
@@ -81,6 +84,7 @@ export function useSync({
     cachedTasks,
     isOnline,
     onSyncComplete,
+    onPostSyncRefreshStart,
     pendingOperations.length,
     refetchTasks,
     syncMeta,
