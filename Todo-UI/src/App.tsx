@@ -67,6 +67,14 @@ const nextStatusMap: Record<TaskStatus, TaskStatus> = {
   DONE: 'TODO',
 };
 
+function getApiErrorStatus(error: unknown) {
+  if (typeof error === 'object' && error !== null && 'status' in error) {
+    return (error as { status?: number | string }).status;
+  }
+
+  return null;
+}
+
 function parseSortValue(sortValue: TaskSortValue): {
   sortBy: TaskSortBy;
   sortOrder: TaskSortOrder;
@@ -363,6 +371,11 @@ export default function App() {
       return;
     }
 
+    if (!isOnline) {
+      dispatch(finishSessionCheck());
+      return;
+    }
+
     let isActive = true;
 
     triggerGetCurrentUser()
@@ -375,8 +388,27 @@ export default function App() {
         dispatch(setUser(response.data));
         dispatch(finishSessionCheck());
       })
-      .catch(() => {
+      .catch((error) => {
         if (!isActive) {
+          return;
+        }
+
+        const errorStatus = getApiErrorStatus(error);
+        const isUnauthorized =
+          errorStatus === 401 || errorStatus === 403;
+        const isTransportFailure =
+          errorStatus === 'FETCH_ERROR' ||
+          errorStatus === 'TIMEOUT_ERROR' ||
+          errorStatus === 'PARSING_ERROR' ||
+          !navigator.onLine;
+
+        if (!isUnauthorized && isTransportFailure) {
+          dispatch(finishSessionCheck());
+          return;
+        }
+
+        if (!isUnauthorized && typeof errorStatus !== 'number') {
+          dispatch(finishSessionCheck());
           return;
         }
 
@@ -388,7 +420,7 @@ export default function App() {
     return () => {
       isActive = false;
     };
-  }, [accessToken, dispatch, isHydrated, triggerGetCurrentUser]);
+  }, [accessToken, dispatch, isHydrated, isOnline, triggerGetCurrentUser]);
 
   React.useEffect(() => {
     if (!userId || isOnline) {
